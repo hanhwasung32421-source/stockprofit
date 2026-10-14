@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Modal } from "./Modal";
 import { ColumnAdmin } from "./ColumnAdmin";
+import { btnGhost, SectionTitle } from "./ui";
 import type { ColumnPrefs } from "@/lib/columns";
-import { pct, won } from "@/lib/format";
+import { pct, tone, won } from "@/lib/format";
 import type { AlertEvent } from "@/lib/types";
 
 type Settings = { provider: string; telegram: { configured: boolean; connected: boolean } };
@@ -15,6 +16,22 @@ async function post(action: string, okMsg: string) {
   const json = await res.json();
   if (res.ok) toast.success(okMsg);
   else toast.error(json.error ?? "실패했어요");
+}
+
+const PROVIDER_LABEL: Record<string, string> = {
+  kis: "한국투자증권 KIS (실시간)",
+  naver: "네이버 증권 (실시간·비공식, 장애 시 Yahoo 자동 전환)",
+  yahoo: "Yahoo Finance (지연 시세)",
+};
+
+/** 한 줄짜리 항목: 이름 | 값/조작 */
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-2 border-b border-border/60 px-2 py-1.5 last:border-b-0">
+      <span className="text-xs text-muted">{label}</span>
+      <div className="flex items-center gap-1">{children}</div>
+    </div>
+  );
 }
 
 export function SettingsSheet({
@@ -43,12 +60,13 @@ export function SettingsSheet({
   }, [open]);
 
   return (
-    <Modal open={open} onClose={onClose} title="설정">
-      <div role="tablist" className="mb-4 flex gap-1 rounded-xl bg-surface-2 p-1 text-sm font-semibold">
+    <Modal open={open} onClose={onClose} title="설정" width="max-w-lg">
+      {/* HTS 스타일 탭: 평평한 탭 + 활성 탭 밑줄 */}
+      <div role="tablist" className="-mx-3 -mt-3 mb-3 flex border-b border-border bg-surface-2 px-3 text-[13px] font-semibold">
         {(
           [
-            ["alert", "🔔 알림"],
-            ["admin", "🛠 관리자 (구분 순서)"],
+            ["alert", "알림"],
+            ["admin", "관리자 (구분 순서)"],
           ] as const
         ).map(([k, label]) => (
           <button
@@ -56,7 +74,7 @@ export function SettingsSheet({
             role="tab"
             aria-selected={tab === k}
             onClick={() => setTab(k)}
-            className={`flex-1 rounded-lg px-3 py-2 ${tab === k ? "bg-surface shadow-sm" : "text-muted"}`}
+            className={`-mb-px border-b-2 px-4 py-1.5 ${tab === k ? "border-primary text-foreground" : "border-transparent text-muted hover:text-foreground"}`}
           >
             {label}
           </button>
@@ -66,79 +84,73 @@ export function SettingsSheet({
       {tab === "admin" ? (
         <ColumnAdmin prefs={colPrefs} onChange={onColPrefs} onReset={onColReset} />
       ) : (
-      <div className="space-y-6">
-        <section>
-          <h3 className="mb-2 text-sm font-bold">🔊 브라우저 알림</h3>
-          <div className="flex items-center justify-between rounded-2xl bg-surface-2 p-4">
-            <div className="text-sm">
-              <div className="font-semibold">소리 + 팝업 알림</div>
-              <div className="text-xs text-muted">탭이 열려 있을 때 울려요</div>
-            </div>
-            <button
-              onClick={() => onSoundChange(!soundOn)}
-              role="switch"
-              aria-checked={soundOn}
-              className={`relative h-7 w-12 rounded-full transition ${soundOn ? "bg-primary" : "bg-border"}`}
-            >
-              <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${soundOn ? "left-[22px]" : "left-0.5"}`} />
-            </button>
-          </div>
-        </section>
+        <div className="space-y-3">
+          <section className="border border-border">
+            <SectionTitle>브라우저 알림 (탭이 열려 있을 때)</SectionTitle>
+            <Row label="소리 + 팝업 알림">
+              <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold">
+                <input type="checkbox" checked={soundOn} onChange={(e) => onSoundChange(e.target.checked)} className="h-3.5 w-3.5 accent-[var(--primary)]" />
+                {soundOn ? "사용" : "사용 안 함"}
+              </label>
+            </Row>
+          </section>
 
-        <section>
-          <h3 className="mb-2 text-sm font-bold">✈️ 텔레그램 (탭을 닫아도 알림)</h3>
-          <div className="space-y-3 rounded-2xl bg-surface-2 p-4 text-sm">
+          <section className="border border-border">
+            <SectionTitle>텔레그램 (탭을 닫아도 알림)</SectionTitle>
             {!s ? (
-              <span className="text-muted">불러오는 중…</span>
+              <div className="px-2 py-2 text-xs text-muted">불러오는 중…</div>
             ) : !s.telegram.configured ? (
-              <p className="text-muted">서버에 <code>TELEGRAM_BOT_TOKEN</code> 환경변수가 설정되지 않았어요.</p>
+              <div className="px-2 py-2 text-xs text-muted">
+                서버에 <code>TELEGRAM_BOT_TOKEN</code> 환경변수가 없습니다.
+              </div>
             ) : (
               <>
-                <ol className="list-decimal space-y-1 pl-5 text-muted">
-                  <li>아래 “웹훅 등록” 버튼을 한 번 누르세요</li>
-                  <li>텔레그램에서 내 봇에게 <b>/start</b> 를 보내세요</li>
-                  <li>“테스트 메시지”로 확인하세요</li>
-                </ol>
-                <div className="flex items-center gap-2">
-                  <span className={`inline-block h-2.5 w-2.5 rounded-full ${s.telegram.connected ? "bg-green-500" : "bg-border"}`} />
-                  {s.telegram.connected ? "연결됨" : "아직 연결되지 않음"}
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => post("telegram-webhook", "웹훅을 등록했어요")} className="flex-1 rounded-xl border border-border bg-surface py-2.5 font-semibold">
+                <Row label="연결 상태">
+                  <span className={`inline-block h-2 w-2 rounded-full ${s.telegram.connected ? "bg-green-500" : "bg-border"}`} />
+                  <span className="text-xs font-semibold">{s.telegram.connected ? "연결됨" : "연결 안 됨"}</span>
+                </Row>
+                <Row label="동작">
+                  <button onClick={() => post("telegram-webhook", "웹훅을 등록했어요")} className={`${btnGhost} !h-7 !px-2 text-xs`}>
                     웹훅 등록
                   </button>
-                  <button onClick={() => post("telegram-test", "테스트 메시지를 보냈어요")} className="flex-1 rounded-xl bg-primary py-2.5 font-semibold text-primary-fg">
+                  <button onClick={() => post("telegram-test", "테스트 메시지를 보냈어요")} className={`${btnGhost} !h-7 !px-2 text-xs`}>
                     테스트 메시지
                   </button>
-                </div>
+                </Row>
               </>
             )}
-          </div>
-        </section>
+          </section>
 
-        <section>
-          <h3 className="mb-2 text-sm font-bold">🕘 알림 기록</h3>
-          {events.length === 0 ? (
-            <p className="rounded-2xl bg-surface-2 p-4 text-sm text-muted">아직 발송된 알림이 없어요.</p>
-          ) : (
-            <ul className="divide-y divide-border rounded-2xl bg-surface-2 text-sm">
-              {events.map((e) => (
-                <li key={e.id} className="flex justify-between gap-2 px-4 py-3">
-                  <span>
-                    {e.kind === "target" ? "🔔" : "⚠️"} {e.name}{" "}
-                    <span className="num text-muted">{pct(Number(e.profit_pct))} · ₩{won(Number(e.price))}</span>
-                  </span>
-                  <span className="num shrink-0 text-xs text-muted">
-                    {new Date(e.created_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+          <section className="border border-border">
+            <SectionTitle>알림 기록 (최근 20건)</SectionTitle>
+            {events.length === 0 ? (
+              <div className="px-2 py-2 text-xs text-muted">발송된 알림이 없습니다.</div>
+            ) : (
+              <div className="max-h-44 overflow-y-auto">
+                <div className="flex border-b border-border px-2 py-0.5 text-[11px] font-semibold text-muted">
+                  <span className="flex-1">종목</span>
+                  <span className="w-10">구분</span>
+                  <span className="w-16 text-right">수익률</span>
+                  <span className="w-20 text-right">가격</span>
+                  <span className="w-24 text-right">시각</span>
+                </div>
+                {events.map((e) => (
+                  <div key={e.id} className="num flex border-b border-border/60 px-2 py-0.5 text-xs last:border-b-0">
+                    <span className="flex-1 truncate font-sans font-semibold">{e.name}</span>
+                    <span className="w-10 font-sans">{e.kind === "target" ? "목표" : "손절"}</span>
+                    <span className={`w-16 text-right ${tone(Number(e.profit_pct))}`}>{pct(Number(e.profit_pct))}</span>
+                    <span className="w-20 text-right">{won(Number(e.price))}</span>
+                    <span className="w-24 text-right text-muted">
+                      {new Date(e.created_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
 
-        <section className="text-xs text-muted">시세 제공: {s?.provider === "kis" ? "한국투자증권 KIS (실시간)" : s?.provider === "naver" ? "네이버 증권 (실시간, 비공식 · 장애 시 Yahoo로 자동 전환)" : s?.provider === "yahoo" ? "Yahoo Finance (지연될 수 있음)" : "–"}</section>
-      </div>
+          <div className="text-[11px] text-muted">시세 제공: {s ? (PROVIDER_LABEL[s.provider] ?? s.provider) : "–"}</div>
+        </div>
       )}
     </Modal>
   );

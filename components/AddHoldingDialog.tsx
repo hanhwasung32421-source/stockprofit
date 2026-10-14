@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Modal } from "./Modal";
 import { MarketBadge, StockCombobox } from "./StockCombobox";
+import { btnGhost, btnPrimary, Chips, FieldRow, inputCls } from "./ui";
 import { won, pct, tone } from "@/lib/format";
 import type { StockHit } from "@/lib/types";
 
@@ -11,43 +12,6 @@ type Preview = { price: number; changePct: number | null } | { error: string };
 
 const TARGET_CHIPS = [5, 10, 20, 30];
 const STOP_CHIPS = [5, 10, 15];
-
-export function Chips({
-  values,
-  value,
-  onChange,
-  prefix,
-  none,
-}: {
-  values: number[];
-  value: number | null;
-  onChange: (v: number | null) => void;
-  prefix: string;
-  none?: string;
-}) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {none && (
-        <button type="button" onClick={() => onChange(null)} className={chipCls(value === null)}>
-          {none}
-        </button>
-      )}
-      {values.map((v) => (
-        <button type="button" key={v} onClick={() => onChange(v)} className={chipCls(value === v)}>
-          {prefix}
-          {v}%
-        </button>
-      ))}
-    </div>
-  );
-}
-const chipCls = (on: boolean) =>
-  `rounded-full border px-4 py-2 text-sm font-semibold transition ${
-    on ? "border-primary bg-primary text-primary-fg" : "border-border bg-surface-2 text-foreground hover:border-primary"
-  }`;
-
-export const fieldCls =
-  "num w-full rounded-2xl border border-border bg-surface-2 px-4 py-3 text-base outline-none focus:border-primary";
 
 /** 열릴 때마다 새로 마운트되어 입력 상태가 자동 초기화된다 */
 export function AddHoldingDialog({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: () => void }) {
@@ -95,13 +59,7 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
       const res = await fetch("/api/holdings", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          code: stock.code,
-          avg_price: avgNum,
-          qty: 1,
-          target_pct: target,
-          stop_pct: stop,
-        }),
+        body: JSON.stringify({ code: stock.code, avg_price: avgNum, qty: 1, target_pct: target, stop_pct: stop }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "추가하지 못했어요");
@@ -116,103 +74,106 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   }
 
   return (
-    <Modal open onClose={onClose} title="종목 추가">
+    <Modal open onClose={onClose} title="종목 추가" width="max-w-lg">
       {!stock ? (
         <StockCombobox onSelect={choose} />
       ) : (
-        <div className="space-y-5">
-          <div className="rounded-2xl bg-surface-2 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold">{stock.name}</span>
-                  <MarketBadge market={stock.market} />
-                </div>
-                <div className="num text-sm text-muted">종목코드 {stock.code}</div>
+        <div>
+          {/* 종목 정보 한 줄 */}
+          <div className="flex items-center justify-between border border-border bg-surface-2 px-2 py-1.5">
+            <div className="flex min-w-0 items-baseline gap-2">
+              <span className="truncate text-sm font-bold">{stock.name}</span>
+              <span className="num text-xs text-muted">{stock.code}</span>
+              <MarketBadge market={stock.market} />
+            </div>
+            <button className="shrink-0 text-xs font-semibold text-primary hover:underline" onClick={() => setStock(null)}>
+              종목변경
+            </button>
+          </div>
+          <div className="num border-x border-b border-border px-2 py-1.5 text-xs">
+            {!preview ? (
+              <span className="text-muted">현재가 조회 중…</span>
+            ) : "error" in preview ? (
+              <span className="text-up">{preview.error}</span>
+            ) : (
+              <>
+                <span className="text-muted">현재가 </span>
+                <b className={`text-sm ${tone(preview.changePct)}`}>{won(preview.price)}</b>
+                {preview.changePct !== null && <span className={`ml-2 ${tone(preview.changePct)}`}>{pct(preview.changePct)}</span>}
+              </>
+            )}
+          </div>
+
+          <div className="mt-1">
+            <FieldRow label="매수단가">
+              <div className="flex gap-1">
+                <input
+                  autoFocus
+                  className={inputCls}
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  value={avg}
+                  onChange={(e) => setAvg(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && avgNum > 0) {
+                      e.preventDefault();
+                      targetRef.current?.focus();
+                    }
+                  }}
+                  placeholder="원  (Enter ↵ 다음)"
+                  aria-label="매수단가"
+                />
+                {preview && "price" in preview && (
+                  <button type="button" tabIndex={-1} onClick={() => setAvg(String(preview.price))} className={`${btnGhost} shrink-0 !px-2 text-xs`}>
+                    현재가
+                  </button>
+                )}
               </div>
-              <button className="text-sm font-semibold text-primary" onClick={() => setStock(null)}>
-                변경
+            </FieldRow>
+
+            <FieldRow label="목표수익률" hint={targetPrice ? `목표가 ${won(targetPrice)}` : undefined}>
+              <div className="flex items-center gap-2">
+                <div className="flex w-24 shrink-0 items-center gap-1">
+                  <input
+                    ref={targetRef}
+                    className={inputCls}
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    value={target ?? ""}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setTarget(e.target.value ? Number(e.target.value) : null)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void submit();
+                      }
+                    }}
+                    aria-label="목표수익률(%)"
+                  />
+                  <span className="text-xs text-muted">%</span>
+                </div>
+                <Chips values={TARGET_CHIPS} value={target} onChange={setTarget} prefix="+" />
+              </div>
+            </FieldRow>
+
+            <FieldRow label="손절(선택)" hint={stopPrice ? `손절가 ${won(stopPrice)}` : undefined}>
+              <Chips values={STOP_CHIPS} value={stop} onChange={setStop} prefix="-" none="없음" />
+            </FieldRow>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-[11px] text-muted">목표수익률 입력 후 Enter ↵ 로 바로 추가</span>
+            <div className="flex gap-1">
+              <button onClick={onClose} className={btnGhost}>
+                취소
+              </button>
+              <button disabled={!canSubmit} onClick={submit} className={btnPrimary}>
+                {busy ? "추가 중…" : "추가"}
               </button>
             </div>
-            <div className="mt-3 text-sm">
-              {!preview ? (
-                <span className="text-muted">현재가 확인 중…</span>
-              ) : "error" in preview ? (
-                <span className="text-up">{preview.error}</span>
-              ) : (
-                <span>
-                  현재가 <b className="num text-lg">₩{won(preview.price)}</b>{" "}
-                  {preview.changePct !== null && <span className={`num ${tone(preview.changePct)}`}>{pct(preview.changePct)}</span>}
-                </span>
-              )}
-            </div>
           </div>
-
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold">매수 단가 (원) <span className="font-normal text-muted">· Enter ↵ 다음</span></span>
-            <div className="flex gap-2">
-              <input
-                autoFocus
-                className={fieldCls}
-                type="number"
-                inputMode="decimal"
-                min="0"
-                value={avg}
-                onChange={(e) => setAvg(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && avgNum > 0) {
-                    e.preventDefault();
-                    targetRef.current?.focus();
-                  }
-                }}
-                placeholder="예: 70000"
-              />
-              {preview && "price" in preview && (
-                <button type="button" tabIndex={-1} onClick={() => setAvg(String(preview.price))} className="shrink-0 rounded-2xl bg-surface-2 px-4 text-sm font-semibold text-primary">
-                  현재가
-                </button>
-              )}
-            </div>
-          </label>
-
-          <div>
-            <span className="mb-1.5 block text-sm font-semibold">🔔 목표 수익률 (%) <span className="font-normal text-muted">· Enter ↵ 추가</span></span>
-            <input
-              ref={targetRef}
-              className={fieldCls}
-              type="number"
-              inputMode="decimal"
-              min="0"
-              value={target ?? ""}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) => setTarget(e.target.value ? Number(e.target.value) : null)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void submit();
-                }
-              }}
-              placeholder="예: 10"
-            />
-            <div className="mt-2">
-              <Chips values={TARGET_CHIPS} value={target} onChange={setTarget} prefix="+" />
-            </div>
-            {targetPrice && <p className="mt-2 text-sm text-muted">₩{won(targetPrice)} 이상이 되면 알려드려요</p>}
-          </div>
-
-          <div>
-            <span className="mb-1.5 block text-sm font-semibold">⚠️ 손절 알림 <span className="font-normal text-muted">(선택)</span></span>
-            <Chips values={STOP_CHIPS} value={stop} onChange={setStop} prefix="-" none="사용 안 함" />
-            {stopPrice && <p className="mt-2 text-sm text-muted">₩{won(stopPrice)} 이하로 내려가면 알려드려요</p>}
-          </div>
-
-          <button
-            disabled={!canSubmit}
-            onClick={submit}
-            className="w-full rounded-2xl bg-primary py-4 text-base font-bold text-primary-fg disabled:opacity-40"
-          >
-            {busy ? "추가 중…" : "추가하기"}
-          </button>
         </div>
       )}
     </Modal>

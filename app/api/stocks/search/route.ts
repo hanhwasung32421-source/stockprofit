@@ -32,5 +32,12 @@ export async function GET(req: NextRequest) {
       results.push(...fresh);
     }
   }
+  // 정확히 일치 → 이름이 검색어로 시작 → 코드가 시작 → 그 외 (같은 점수면 기존 순서 유지)
+  const lq = q.toLowerCase();
+  const score = (r: StockHit) => {
+    const n = r.name.toLowerCase();
+    return r.code.toLowerCase() === lq || n === lq ? 0 : n.startsWith(lq) ? 1 : r.code.toLowerCase().startsWith(lq) ? 2 : 3;
+  };
+  results.sort((a, b) => score(a) - score(b));
   return NextResponse.json({ results });
 }

@@ -1,28 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search } from "lucide-react";
 import type { StockHit } from "@/lib/types";
+import { inputCls } from "./ui";
 
 const MARKET_STYLE: Record<string, string> = {
-  KOSPI: "bg-down-soft text-down",
-  KOSDAQ: "bg-up-soft text-up",
+  KOSPI: "text-down",
+  KOSDAQ: "text-up",
 };
 
 export function MarketBadge({ market }: { market: string }) {
-  return (
-    <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${MARKET_STYLE[market] ?? "bg-surface-2 text-muted"}`}>
-      {market || "-"}
-    </span>
-  );
+  return <span className={`text-[10px] font-bold ${MARKET_STYLE[market] ?? "text-muted"}`}>{market || "-"}</span>;
 }
 
-/** 종목명/종목코드 자동완성. 선택하면 onSelect로 정확한 6자리 코드를 넘긴다. */
+/** 종목명/종목코드 자동완성. ↑↓ 이동, Enter 선택. 선택하면 정확한 6자리 코드를 넘긴다. */
 export function StockCombobox({ onSelect }: { onSelect: (s: StockHit) => void }) {
   const [q, setQ] = useState("");
   const [result, setResult] = useState<{ term: string; hits: StockHit[]; error?: string }>({ term: "", hits: [] });
   const [active, setActive] = useState(0);
   const seq = useRef(0);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     const term = q.trim();
@@ -47,6 +44,11 @@ export function StockCombobox({ onSelect }: { onSelect: (s: StockHit) => void })
   const hits = term ? result.hits : [];
   const loading = !!term && result.term !== term;
 
+  // 방향키로 이동할 때 선택 줄이 보이도록 스크롤
+  useEffect(() => {
+    listRef.current?.children[active]?.scrollIntoView({ block: "nearest" });
+  }, [active]);
+
   const onKey = (e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing) return; // 한글 조합 중 Enter/방향키는 무시
     if (e.key === "ArrowDown") {
@@ -63,42 +65,48 @@ export function StockCombobox({ onSelect }: { onSelect: (s: StockHit) => void })
 
   return (
     <div>
-      <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface-2 px-4 py-3 focus-within:border-primary">
-        <Search size={18} className="text-muted" />
-        <input
-          autoFocus
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={onKey}
-          placeholder="종목명 또는 종목코드 (예: 삼성전자, 005930)"
-          className="w-full bg-transparent text-base outline-none placeholder:text-muted"
-          aria-label="종목 검색"
-        />
+      <input
+        autoFocus
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        onKeyDown={onKey}
+        placeholder="종목명 또는 종목코드  (↑↓ 이동 · Enter 선택)"
+        className={`${inputCls} !font-sans`}
+        aria-label="종목 검색"
+      />
+      <div className="mt-1 border border-border">
+        <div className="flex border-b border-border bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-muted">
+          <span className="flex-1">종목명</span>
+          <span className="w-16 text-right">코드</span>
+          <span className="w-14 text-right">시장</span>
+        </div>
+        <ul ref={listRef} className="h-56 overflow-y-auto" role="listbox">
+          {hits.map((h, i) => (
+            <li key={h.code} role="option" aria-selected={i === active}>
+              <button
+                type="button"
+                onClick={() => onSelect(h)}
+                onMouseEnter={() => setActive(i)}
+                className={`flex w-full items-center border-b border-border/60 px-2 py-1 text-left text-[13px] ${
+                  i === active ? "bg-primary/20 shadow-[inset_2px_0_0_var(--primary)]" : ""
+                }`}
+              >
+                <span className="flex-1 truncate font-semibold">{h.name}</span>
+                <span className="num w-16 text-right text-xs text-muted">{h.code}</span>
+                <span className="w-14 text-right">
+                  <MarketBadge market={h.market} />
+                </span>
+              </button>
+            </li>
+          ))}
+          {!term && <li className="px-2 py-3 text-center text-xs text-muted">종목명이나 코드를 입력하세요</li>}
+          {term && loading && hits.length === 0 && <li className="px-2 py-3 text-center text-xs text-muted">검색 중…</li>}
+          {term && !loading && result.error && <li className="px-2 py-3 text-center text-xs text-up">⚠ {result.error}</li>}
+          {term && !loading && !result.error && hits.length === 0 && (
+            <li className="px-2 py-3 text-center text-xs text-muted">검색 결과가 없습니다</li>
+          )}
+        </ul>
       </div>
-      <ul className="mt-2 max-h-72 overflow-y-auto" role="listbox">
-        {hits.map((h, i) => (
-          <li key={h.code} role="option" aria-selected={i === active}>
-            <button
-              type="button"
-              onClick={() => onSelect(h)}
-              onMouseEnter={() => setActive(i)}
-              className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-left ${i === active ? "bg-surface-2" : ""}`}
-            >
-              <span className="font-medium">{h.name}</span>
-              <span className="flex items-center gap-2">
-                <MarketBadge market={h.market} />
-                <span className="num text-sm text-muted">{h.code}</span>
-              </span>
-            </button>
-          </li>
-        ))}
-        {term && !loading && result.error && (
-          <li className="rounded-xl bg-up-soft px-3 py-4 text-center text-sm text-up">⚠️ {result.error}</li>
-        )}
-        {term && !loading && !result.error && hits.length === 0 && (
-          <li className="px-3 py-6 text-center text-sm text-muted">검색 결과가 없어요. 종목명을 다시 확인해 주세요.</li>
-        )}
-      </ul>
     </div>
   );
 }
