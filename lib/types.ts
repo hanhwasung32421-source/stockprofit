@@ -11,6 +11,8 @@ export type ClientHolding = {
   alert_state: "armed" | "triggered";
   triggered_kind: "target" | "stop" | null;
   triggered_at: string | null;
+  bought_at: string;
+  sort_order: number | null;
   price: number | null;
   changePct: number | null;
   stale: boolean;

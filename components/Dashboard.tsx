@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { Plus, Settings } from "lucide-react";
 import { AddHoldingDialog } from "./AddHoldingDialog";
 import { EditHoldingDialog } from "./EditHoldingDialog";
-import { HoldingHeader, HoldingRow } from "./HoldingRow";
+import { HoldingHeader, HoldingRow, type DropPos, type SortKey, type SortState } from "./HoldingRow";
 import { SummaryCards } from "./SummaryCards";
 import { AlertBanner } from "./AlertBanner";
 import { SettingsSheet } from "./SettingsSheet";
@@ -52,6 +52,10 @@ export function Dashboard() {
   const [soundOn, setSoundOn] = useLocalFlag("sp_sound");
   const [pending, setPending] = useState<AlertEvent[]>([]); // 확인 전 알림 배너
   const known = useRef<Set<string> | null>(null);
+  const [sort, setSort] = useState<SortState>(null);
+  const [localOrder, setLocalOrder] = useState<string[] | null>(null); // 드래그 직후 즉시 반영용
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [drop, setDrop] = useState<{ id: string; pos: Exclude<DropPos, null> } | null>(null);
   const [, tick] = useState(0);
 
   useEffect(() => {
@@ -119,7 +123,51 @@ export function Dashboard() {
     });
   }
 
-  const holdings = data?.holdings ?? [];
+  const holdings = useMemo(() => data?.holdings ?? [], [data]);
+
+  // 표시 순서: 저장된 순서(드래그 즉시 반영) → 헤더 정렬이 켜져 있으면 그 기준으로 재정렬
+  const rows = useMemo(() => {
+    let base = holdings;
+    if (localOrder) {
+      const byId = new Map(holdings.map((h) => [h.id, h]));
+      const ordered = localOrder.map((id) => byId.get(id)).filter((h): h is ClientHolding => !!h);
+      const rest = holdings.filter((h) => !localOrder.includes(h.id));
+      base = [...ordered, ...rest];
+    }
+    if (!sort) return base;
+    const { key, dir } = sort;
+    const val = (h: ClientHolding) => (key === "name" || key === "bought_at" ? h[key] : h[key]);
+    return [...base].sort((a, b) => {
+      const x = val(a);
+      const y = val(b);
+      if (x == null && y == null) return 0;
+      if (x == null) return 1; // 값 없는 종목은 항상 아래
+      if (y == null) return -1;
+      const c = typeof x === "string" ? x.localeCompare(y as string, "ko") : (x as number) - (y as number);
+      return dir === "asc" ? c : -c;
+    });
+  }, [holdings, localOrder, sort]);
+
+  const onSort = (key: SortKey) =>
+    setSort((s) => (s?.key !== key ? { key, dir: "asc" } : s.dir === "asc" ? { key, dir: "desc" } : null));
+
+  async function saveOrder(ids: string[]) {
+    setLocalOrder(ids);
+    const res = await fetch("/api/holdings/reorder", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ids }) });
+    if (!res.ok) toast.error((await res.json().catch(() => ({}))).error ?? "순서를 저장하지 못했어요");
+    mutate();
+  }
+
+  function dropOn(targetId: string, pos: Exclude<DropPos, null>) {
+    if (!dragId || dragId === targetId) return;
+    const ids = rows.map((r) => r.id).filter((id) => id !== dragId);
+    let idx = ids.indexOf(targetId);
+    if (pos === "after") idx++;
+    ids.splice(idx, 0, dragId);
+    setSort(null); // 직접 끌어 정렬하면 헤더 정렬은 해제하고 보이는 순서를 새 기본 순서로 저장
+    void saveOrder(ids);
+  }
+
   const lastQuoted = holdings.map((h) => h.quotedAt).filter(Boolean).sort().pop();
 
   return (
@@ -178,11 +226,35 @@ export function Dashboard() {
         <div className="space-y-2">
           <SummaryCards holdings={holdings} />
           <div className="overflow-hidden rounded-lg border border-border bg-surface">
-            <HoldingHeader />
-            {holdings.map((h) => (
+            <HoldingHeader sort={sort} onSort={onSort} />
+            {rows.map((h) => (
               <HoldingRow
                 key={h.id}
                 h={h}
+                dropPos={drop?.id === h.id ? drop.pos : null}
+                onDragStart={(e) => {
+                  setDragId(h.id);
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("text/plain", h.id); // Firefox 필수
+                }}
+                onDragOver={(e) => {
+                  if (!dragId) return;
+                  e.preventDefault();
+                  const r = e.currentTarget.getBoundingClientRect();
+                  const pos = e.clientY < r.top + r.height / 2 ? "before" : "after";
+                  setDrop((d) => (d?.id === h.id && d.pos === pos ? d : { id: h.id, pos }));
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (drop) dropOn(drop.id, drop.pos);
+                  setDragId(null);
+                  setDrop(null);
+                }}
+                onDragEnd={() => {
+                  setDragId(null);
+                  setDrop(null);
+                }}
+                onDateChange={(d) => patch(h, { bought_at: d })}
                 onEdit={() => setEditing(h)}
                 onDelete={() => remove(h)}
                 onToggle={() => patch(h, { enabled: !h.enabled })}

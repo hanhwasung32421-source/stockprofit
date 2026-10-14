@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/supabase-server";
+import { errorMessage } from "@/lib/errors";
 
 const patchSchema = z
   .object({
@@ -10,6 +11,7 @@ const patchSchema = z
     stop_pct: z.number().positive().max(100).nullable(),
     enabled: z.boolean(),
     rearm: z.boolean(),
+    bought_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   })
   .partial();
 
@@ -30,7 +32,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     update.triggered_at = null;
   }
   const { data, error } = await db().from("holdings").update(update).eq("id", id).select().maybeSingle();
-  if (error) return NextResponse.json({ error: "수정 실패" }, { status: 500 });
+  if (error) return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   if (!data) return NextResponse.json({ error: "종목을 찾을 수 없습니다" }, { status: 404 });
   return NextResponse.json({ holding: data });
 }
