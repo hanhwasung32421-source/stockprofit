@@ -24,5 +24,5 @@ Next.js 16 · Supabase(서울) · Vercel(`icn1` 서울).
 ## 구조
 - `lib/quotes/*` — `QuoteProvider` (KIS / Yahoo), DB 캐시(장중 3초)로 호출 제한 보호
 - `lib/alerts/evaluate.ts` — 알람 평가 (조건부 UPDATE로 중복 발송 방지, 목표 −1%p 아래로 내려가면 재무장)
-- `proxy.ts` — 비밀번호 쿠키 인증 (Next 16의 middleware 후속)
+- 로그인 없음: URL을 아는 사람은 누구나 접근 가능 (cron/webhook만 시크릿으로 보호)
 - Supabase는 서버(service role)에서만 접근, 모든 테이블 RLS ON(정책 없음)

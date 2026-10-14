@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
-import { Plus, Settings, LogOut } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { AddHoldingDialog } from "./AddHoldingDialog";
 import { EditHoldingDialog } from "./EditHoldingDialog";
 import { HoldingCard } from "./HoldingCard";
@@ -13,14 +13,11 @@ import { SettingsSheet } from "./SettingsSheet";
 import { notifyBrowser, playAlarm, stopAlarm, unlockAudio } from "@/lib/alarm";
 import { pct, timeAgo } from "@/lib/format";
 import { useLocalFlag } from "@/lib/use-local-flag";
+import { APP_VERSION } from "@/lib/version";
 import type { AlertEvent, ClientHolding, QuotesResponse } from "@/lib/types";
 
 const fetcher = async (url: string): Promise<QuotesResponse> => {
   const res = await fetch(url);
-  if (res.status === 401) {
-    window.location.href = "/login";
-    throw new Error("unauthorized");
-  }
   if (!res.ok) throw new Error("fetch failed");
   return res.json();
 };
@@ -122,11 +119,6 @@ export function Dashboard() {
     });
   }
 
-  async function logout() {
-    await fetch("/api/logout", { method: "POST" });
-    window.location.href = "/login";
-  }
-
   const holdings = data?.holdings ?? [];
   const lastQuoted = holdings.map((h) => h.quotedAt).filter(Boolean).sort().pop();
 
@@ -146,9 +138,6 @@ export function Dashboard() {
           <span className="mr-2 hidden text-xs text-muted sm:inline">{lastQuoted ? `시세 ${timeAgo(lastQuoted)}` : ""}</span>
           <button onClick={() => setSettingsOpen(true)} aria-label="알림 설정" className="rounded-full p-2.5 hover:bg-surface-2">
             <Settings size={20} />
-          </button>
-          <button onClick={logout} aria-label="로그아웃" className="rounded-full p-2.5 text-muted hover:bg-surface-2">
-            <LogOut size={20} />
           </button>
         </div>
       </header>
@@ -210,6 +199,8 @@ export function Dashboard() {
           <Plus size={30} />
         </button>
       )}
+
+      <footer className="num mt-10 text-center text-xs text-muted">v{APP_VERSION}</footer>
 
       <AddHoldingDialog open={addOpen} onClose={() => setAddOpen(false)} onAdded={() => mutate()} />
       <EditHoldingDialog holding={editing} onClose={() => setEditing(null)} onSaved={() => mutate()} />
