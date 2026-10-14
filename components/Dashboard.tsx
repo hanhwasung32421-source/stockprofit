@@ -9,6 +9,7 @@ import { EditHoldingDialog } from "./EditHoldingDialog";
 import { HoldingHeader, HoldingRow, type DropPos, type SortKey } from "./HoldingRow";
 import { sortValue, useColumnPrefs, visibleCols } from "@/lib/columns";
 import { useSortPref } from "@/lib/use-sort-pref";
+import { isRefreshHours } from "@/lib/quotes/market-hours";
 import { useAppTitle } from "@/lib/use-app-title";
 import { SummaryCards } from "./SummaryCards";
 import { AlertBanner } from "./AlertBanner";
@@ -43,9 +44,14 @@ const ls = {
   },
 };
 
+const POLL_MS = 7_000; // 시세 갱신 주기
+
 export function Dashboard() {
+  // 자동 갱신은 매일 08:00–19:00(KST)에만. 그 밖의 시간에는 화면을 열 때 한 번만 가져온다.
+  // (1초마다 리렌더되는 tick 덕분에 08:00이 되면 자동으로 다시 갱신이 시작된다)
+  const inRefreshHours = isRefreshHours();
   const { data, error, isLoading, mutate } = useSWR<QuotesResponse>("/api/quotes", fetcher, {
-    refreshInterval: 5_000, // 시세는 항상 5초마다 갱신
+    refreshInterval: inRefreshHours ? POLL_MS : 0,
     keepPreviousData: true,
     dedupingInterval: 2_000,
   });
@@ -72,6 +78,13 @@ export function Dashboard() {
     const t = setInterval(() => tick((n) => n + 1), 1000); // "n초 전" 갱신
     return () => clearInterval(t);
   }, []);
+
+  // 08:00이 되어 갱신 시간이 시작되는 순간 바로 한 번 가져온다 (처음 마운트 때는 SWR이 이미 가져옴)
+  const wasInHours = useRef(inRefreshHours);
+  useEffect(() => {
+    if (inRefreshHours && !wasInHours.current) void mutate();
+    wasInHours.current = inRefreshHours;
+  }, [inRefreshHours, mutate]);
 
   // 크롬 탭(창) 제목도 같은 이름으로
   useEffect(() => {
@@ -226,7 +239,7 @@ export function Dashboard() {
               {data.marketOpen ? "장중" : "장마감"}
             </span>
           )}
-          <span className="num hidden text-[11px] text-muted sm:inline">{lastQuoted ? `시세 ${timeAgo(lastQuoted)}` : ""}</span>
+          <span className="num hidden text-[11px] text-muted sm:inline">{!inRefreshHours ? "자동 갱신 중지 (08~19시만 갱신)" : lastQuoted ? `시세 ${timeAgo(lastQuoted)}` : ""}</span>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <button

@@ -1,10 +1,15 @@
 import { db } from "@/lib/supabase-server";
-import { isMarketOpen } from "./market-hours";
+import { isLiveWindow } from "./market-hours";
 import { KisProvider } from "./kis";
 import { NaverProvider } from "./naver";
 import { YahooProvider } from "./yahoo";
 import type { Market, Quote, QuoteProvider } from "./provider";
 import { T } from "@/lib/tables";
+
+/** 폴백이 쓰인 경우(예: 네이버 장애 → Yahoo) 최근 20초간 그 이름을 화면에 알린다 */
+let fallbackName: string | null = null;
+let fallbackUntil = 0;
+const activeProviderName = (primary: string) => (fallbackName && Date.now() < fallbackUntil ? fallbackName : primary);
 
 /** 앞 제공자가 못 가져온 종목은 다음 제공자로 넘기는 폴백 체인 */
 class ChainProvider implements QuoteProvider {
@@ -18,7 +23,12 @@ class ChainProvider implements QuoteProvider {
       const rest = items.filter((i) => !got.has(i.code));
       if (!rest.length) break;
       try {
-        for (const q of await p.fetchQuotes(rest)) got.set(q.code, q);
+        const res = await p.fetchQuotes(rest);
+        for (const q of res) got.set(q.code, q);
+        if (res.length && p !== this.chain[0]) {
+          fallbackName = p.name;
+          fallbackUntil = Date.now() + 20_000;
+        }
       } catch (e) {
         console.error(`[quotes] ${p.name} failed`, e);
       }
@@ -38,7 +48,7 @@ export function getProvider(): QuoteProvider {
 export type CachedQuote = Quote & { stale: boolean };
 
 /**
- * 캐시 우선 시세 조회. 장중 3초 / 장외 5분 이내 캐시는 재사용해
+ * 캐시 우선 시세 조회. 평일 08–19시 3초 / 그 외 5분 이내 캐시는 재사용해
  * 여러 탭·cron이 동시에 호출해도 증권사 API 호출 제한을 넘기지 않는다.
  */
 export async function getQuotes(codes: string[]): Promise<{ quotes: Map<string, CachedQuote>; provider: string }> {
@@ -47,7 +57,7 @@ export async function getQuotes(codes: string[]): Promise<{ quotes: Map<string, 
   const quotes = new Map<string, CachedQuote>();
   if (!unique.length) return { quotes, provider: provider.name };
 
-  const ttlMs = isMarketOpen() ? 3_000 : 5 * 60_000;
+  const ttlMs = isLiveWindow() ? 3_000 : 5 * 60_000; // 평일 08–19시 3초, 그 외 5분
   const now = Date.now();
 
   const { data: cached } = await db().from(T.priceCache).select("*").in("code", unique);
@@ -81,5 +91,5 @@ export async function getQuotes(codes: string[]): Promise<{ quotes: Map<string, 
       console.error("[quotes] provider failed", e); // 캐시된(stale) 값으로 degrade
     }
   }
-  return { quotes, provider: provider.name };
+  return { quotes, provider: activeProviderName(provider.name) };
 }
