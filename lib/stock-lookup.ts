@@ -1,5 +1,6 @@
 import { db } from "@/lib/supabase-server";
 import type { StockHit } from "@/lib/types";
+import { T } from "@/lib/tables";
 
 // 네이버 증권 자동완성(비공식)으로 종목명/코드를 찾는다.
 // 종목 목록 테이블(stocks)이 비어 있어도 사이트에서 종목을 하나씩 추가할 수 있게 하는 용도.
@@ -37,7 +38,7 @@ export async function lookupNaver(q: string): Promise<StockHit[]> {
 export async function cacheStocks(hits: StockHit[]) {
   if (!hits.length) return;
   const { error } = await db()
-    .from("stocks")
+    .from(T.stocks)
     .upsert(hits.map((h) => ({ code: h.code, name: h.name, market: h.market, updated_at: new Date().toISOString() })));
   if (error) console.error("[stock-lookup] cache failed", error);
 }

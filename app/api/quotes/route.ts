@@ -5,6 +5,7 @@ import { getQuotes } from "@/lib/quotes";
 import { isMarketOpen } from "@/lib/quotes/market-hours";
 import { evaluateAlerts } from "@/lib/alerts/evaluate";
 import { errorMessage } from "@/lib/errors";
+import { T } from "@/lib/tables";
 
 
 export async function GET() {
@@ -17,7 +18,7 @@ export async function GET() {
     // 평가 후 상태를 다시 읽어 응답 (방금 발동한 알람 반영)
     const fresh = await loadHoldings();
     const { data: events } = await db()
-      .from("alert_events")
+      .from(T.alertEvents)
       .select("*")
       .order("created_at", { ascending: false })
       .limit(20);

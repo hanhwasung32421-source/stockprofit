@@ -3,6 +3,7 @@ import { db } from "@/lib/supabase-server";
 import { cacheStocks, lookupNaver } from "@/lib/stock-lookup";
 import { errorMessage } from "@/lib/errors";
 import type { StockHit } from "@/lib/types";
+import { T } from "@/lib/tables";
 
 const LIMIT = 10;
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   let data: StockHit[] | null;
   try {
-    const res = await db().rpc("search_stocks", { q, lim: LIMIT });
+    const res = await db().rpc(T.searchFn, { q, lim: LIMIT });
     if (res.error) throw res.error;
     data = res.data;
   } catch (e) {

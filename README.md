@@ -6,7 +6,8 @@ Next.js 16 · Supabase(서울) · Vercel(`icn1` 서울).
 ## 설정 순서
 
 1. **Supabase** 프로젝트 생성 (Region: *Northeast Asia – Seoul*)
-   - SQL Editor에서 `supabase/migrations/0001_init.sql` 실행
+   - SQL Editor에서 `supabase/migrations/` 의 `0001_init.sql` → `0003_order_date.sql` → `0004_prefix_tables.sql` 순서로 실행
+     (모든 테이블은 `stockprofit_` 접두어: stockprofit_stocks, stockprofit_holdings, stockprofit_price_cache, stockprofit_alert_events, stockprofit_kv)
    - Database → Extensions에서 `pg_cron`, `pg_net` 활성화 (배포 후 `0002_cron.sql` 실행용)
 2. **환경변수** — `.env.example`을 `.env.local`로 복사해 채우기
    - `KIS_APP_KEY/SECRET` 이 없으면 Yahoo Finance(지연 시세)로 자동 폴백 → 계좌 없이도 먼저 써볼 수 있음

@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { T } from "@/lib/tables";
 
 let client: SupabaseClient | null = null;
 
@@ -14,11 +15,11 @@ export function db(): SupabaseClient {
 }
 
 export async function kvGet<T>(key: string): Promise<T | null> {
-  const { data } = await db().from("kv").select("value").eq("key", key).maybeSingle();
+  const { data } = await db().from(T.kv).select("value").eq("key", key).maybeSingle();
   return (data?.value as T) ?? null;
 }
 
 export async function kvSet(key: string, value: unknown) {
-  const { error } = await db().from("kv").upsert({ key, value, updated_at: new Date().toISOString() });
+  const { error } = await db().from(T.kv).upsert({ key, value, updated_at: new Date().toISOString() });
   if (error) throw error;
 }

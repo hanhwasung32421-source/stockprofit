@@ -4,6 +4,7 @@ import { KisProvider } from "./kis";
 import { NaverProvider } from "./naver";
 import { YahooProvider } from "./yahoo";
 import type { Market, Quote, QuoteProvider } from "./provider";
+import { T } from "@/lib/tables";
 
 /** 앞 제공자가 못 가져온 종목은 다음 제공자로 넘기는 폴백 체인 */
 class ChainProvider implements QuoteProvider {
@@ -49,7 +50,7 @@ export async function getQuotes(codes: string[]): Promise<{ quotes: Map<string, 
   const ttlMs = isMarketOpen() ? 3_000 : 5 * 60_000;
   const now = Date.now();
 
-  const { data: cached } = await db().from("price_cache").select("*").in("code", unique);
+  const { data: cached } = await db().from(T.priceCache).select("*").in("code", unique);
   const fresh = new Set<string>();
   for (const c of cached ?? []) {
     const age = now - new Date(c.fetched_at ?? c.quoted_at).getTime();
@@ -65,14 +66,14 @@ export async function getQuotes(codes: string[]): Promise<{ quotes: Map<string, 
 
   const need = unique.filter((c) => !fresh.has(c));
   if (need.length) {
-    const { data: meta } = await db().from("stocks").select("code, market").in("code", need);
+    const { data: meta } = await db().from(T.stocks).select("code, market").in("code", need);
     const items = (meta ?? []).map((m) => ({ code: m.code as string, market: m.market as string }));
     try {
       const live = await provider.fetchQuotes(items);
       if (live.length) {
         const fetchedAt = new Date().toISOString();
         await db()
-          .from("price_cache")
+          .from(T.priceCache)
           .upsert(live.map((q) => ({ code: q.code, price: q.price, change_pct: q.changePct, quoted_at: q.quotedAt, fetched_at: fetchedAt })));
         for (const q of live) quotes.set(q.code, { ...q, stale: false });
       }

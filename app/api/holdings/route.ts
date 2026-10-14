@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/supabase-server";
 import { getQuotes } from "@/lib/quotes";
 import { isMissingColumn } from "@/lib/holdings";
+import { T } from "@/lib/tables";
 
 
 const createSchema = z.object({
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "입력값을 확인해 주세요" }, { status: 400 });
   const body = parsed.data;
 
-  const { data: stock } = await db().from("stocks").select("code").eq("code", body.code).maybeSingle();
+  const { data: stock } = await db().from(T.stocks).select("code").eq("code", body.code).maybeSingle();
   if (!stock) return NextResponse.json({ error: "존재하지 않는 종목코드입니다" }, { status: 404 });
 
   // 실제로 시세가 조회되는 종목만 저장 (잘못된 코드 / 거래정지 방지)
@@ -36,10 +37,10 @@ export async function POST(req: Request) {
     stop_pct: body.stop_pct ?? null,
   };
   // 새 종목은 맨 아래로 (sort_order = 현재 최대값 + 1). 컬럼이 아직 없으면 기본 필드만 저장.
-  const last = await db().from("holdings").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
+  const last = await db().from(T.holdings).select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
   const extra = isMissingColumn(last.error) ? null : { sort_order: (last.data?.sort_order ?? 0) + 1, ...(body.bought_at ? { bought_at: body.bought_at } : {}) };
-  let { data, error } = await db().from("holdings").insert(extra ? { ...row, ...extra } : row).select().single();
-  if (isMissingColumn(error)) ({ data, error } = await db().from("holdings").insert(row).select().single());
+  let { data, error } = await db().from(T.holdings).insert(extra ? { ...row, ...extra } : row).select().single();
+  if (isMissingColumn(error)) ({ data, error } = await db().from(T.holdings).insert(row).select().single());
   if (error) {
     console.error("[holdings.create]", error);
     return NextResponse.json({ error: "저장 실패" }, { status: 500 });

@@ -2,6 +2,7 @@ import { db } from "@/lib/supabase-server";
 import { profitPct, type HoldingRow } from "@/lib/holdings";
 import type { CachedQuote } from "@/lib/quotes";
 import { sendTelegram } from "./telegram";
+import { T } from "@/lib/tables";
 
 const REARM_BAND = 1; // %p — 경계에서 왔다갔다할 때 알람 폭탄 방지
 
@@ -27,7 +28,7 @@ export async function evaluateAlerts(holdings: HoldingRow[], quotes: Map<string,
         (h.triggered_kind === "stop" && h.stop_pct !== null && pct > -h.stop_pct + REARM_BAND);
       if (rearm) {
         await db()
-          .from("holdings")
+          .from(T.holdings)
           .update({ alert_state: "armed", triggered_kind: null, triggered_at: null })
           .eq("id", h.id)
           .eq("alert_state", "triggered");
@@ -40,7 +41,7 @@ export async function evaluateAlerts(holdings: HoldingRow[], quotes: Map<string,
     if (!kind) continue;
 
     const { data: won_ } = await db()
-      .from("holdings")
+      .from(T.holdings)
       .update({ alert_state: "triggered", triggered_kind: kind, triggered_at: new Date().toISOString() })
       .eq("id", h.id)
       .eq("alert_state", "armed")
@@ -48,7 +49,7 @@ export async function evaluateAlerts(holdings: HoldingRow[], quotes: Map<string,
     if (!won_?.length) continue; // 다른 요청이 먼저 발동시킴
 
     fired.push(h.id);
-    await db().from("alert_events").insert({
+    await db().from(T.alertEvents).insert({
       holding_id: h.id,
       code: h.code,
       name: h.name,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/supabase-server";
 import { errorMessage } from "@/lib/errors";
+import { T } from "@/lib/tables";
 
 const patchSchema = z
   .object({
@@ -31,7 +32,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     update.triggered_kind = null;
     update.triggered_at = null;
   }
-  const { data, error } = await db().from("holdings").update(update).eq("id", id).select().maybeSingle();
+  const { data, error } = await db().from(T.holdings).update(update).eq("id", id).select().maybeSingle();
   if (error) return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   if (!data) return NextResponse.json({ error: "종목을 찾을 수 없습니다" }, { status: 404 });
   return NextResponse.json({ holding: data });
@@ -39,7 +40,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
 export async function DELETE(_req: Request, { params }: Ctx) {
   const { id } = await params;
-  const { error } = await db().from("holdings").delete().eq("id", id);
+  const { error } = await db().from(T.holdings).delete().eq("id", id);
   if (error) return NextResponse.json({ error: "삭제 실패" }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

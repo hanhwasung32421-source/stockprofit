@@ -1,4 +1,5 @@
 import { db } from "@/lib/supabase-server";
+import { T } from "@/lib/tables";
 
 export type HoldingRow = {
   id: string;
@@ -25,7 +26,7 @@ export const isMissingColumn = (e: { message?: string } | null | undefined) =>
 const kstDate = (iso: string) => new Date(iso).toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
 
 export async function loadHoldings(): Promise<HoldingRow[]> {
-  const q = () => db().from("holdings").select("*, stocks(name, market)");
+  const q = () => db().from(T.holdings).select(`*, stocks:${T.stocks}(name, market)`);
   let res = await q().order("sort_order", { ascending: true }).order("created_at", { ascending: true });
   if (isMissingColumn(res.error)) res = await q().order("created_at", { ascending: true });
   const { data, error } = res;
