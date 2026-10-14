@@ -12,6 +12,7 @@ import { useSortPref } from "@/lib/use-sort-pref";
 import { SummaryCards } from "./SummaryCards";
 import { AlertBanner } from "./AlertBanner";
 import { SettingsSheet } from "./SettingsSheet";
+import { HistoryDialog } from "./HistoryDialog";
 import { notifyBrowser, playAlarm, stopAlarm, unlockAudio } from "@/lib/alarm";
 import { pct, timeAgo } from "@/lib/format";
 import { useLocalFlag } from "@/lib/use-local-flag";
@@ -50,6 +51,7 @@ export function Dashboard() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [editing, setEditing] = useState<ClientHolding | null>(null);
   const [soundOn, setSoundOn] = useLocalFlag("sp_sound");
   const [pending, setPending] = useState<AlertEvent[]>([]); // 확인 전 알림 배너
@@ -73,13 +75,13 @@ export function Dashboard() {
       if (e.key !== "1" || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-      if (addOpen || settingsOpen || editing) return;
+      if (addOpen || settingsOpen || historyOpen || editing) return;
       e.preventDefault();
       setAddOpen(true);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [addOpen, settingsOpen, editing]);
+  }, [addOpen, settingsOpen, historyOpen, editing]);
 
   // 새 알림 이벤트 감지: 첫 로드엔 소리 없이 배너만, 이후 새 이벤트는 소리+팝업
   useEffect(() => {
@@ -269,8 +271,18 @@ export function Dashboard() {
         </div>
       )}
 
-      <footer className="num mt-6 text-center text-[11px] text-muted">v{APP_VERSION}</footer>
+      <div className="mt-1.5 flex justify-end">
+        <button
+          onClick={() => setHistoryOpen(true)}
+          className="h-7 rounded-sm border border-border bg-surface px-3 text-xs font-semibold text-muted hover:bg-surface-2 hover:text-foreground"
+        >
+          기록
+        </button>
+      </div>
 
+      <footer className="num mt-4 text-center text-[11px] text-muted">v{APP_VERSION}</footer>
+
+      <HistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} cols={cols} />
       <AddHoldingDialog open={addOpen} onClose={() => setAddOpen(false)} onAdded={() => mutate()} />
       <EditHoldingDialog holding={editing} onClose={() => setEditing(null)} onSaved={() => mutate()} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} events={data?.events ?? []} soundOn={soundOn} onSoundChange={changeSound} colPrefs={prefs} onColPrefs={saveCols} onColReset={resetCols} />

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/supabase-server";
 import { errorMessage } from "@/lib/errors";
+import { snapshotHolding } from "@/lib/history";
 import { T } from "@/lib/tables";
 
 const patchSchema = z
@@ -39,6 +40,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
 export async function DELETE(_req: Request, { params }: Ctx) {
   const { id } = await params;
+  await snapshotHolding(id); // 삭제 당시의 표 한 줄을 기록으로 보관
   const { error } = await db().from(T.holdings).delete().eq("id", id);
   if (error) return NextResponse.json({ error: "삭제 실패" }, { status: 500 });
   return NextResponse.json({ ok: true });

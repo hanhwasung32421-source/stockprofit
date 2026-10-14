@@ -5,5 +5,6 @@ export const T = {
   priceCache: "stockprofit_price_cache",
   alertEvents: "stockprofit_alert_events",
   kv: "stockprofit_kv",
+  deleted: "stockprofit_deleted_holdings",
   searchFn: "stockprofit_search_stocks",
 } as const;

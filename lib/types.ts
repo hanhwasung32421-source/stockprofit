@@ -37,4 +37,20 @@ export type QuotesResponse = {
   events: AlertEvent[];
 };
 
+/** 삭제한 종목의 삭제 당시 표 한 줄 */
+export type HistoryItem = {
+  id: string;
+  code: string;
+  name: string;
+  market: string | null;
+  price: number | null;
+  change_pct: number | null;
+  avg_price: number;
+  profit_pct: number | null;
+  target_pct: number;
+  bought_at: string | null;
+  elapsed_days: number | null;
+  deleted_at: string;
+};
+
 export type StockHit = { code: string; name: string; market: string };

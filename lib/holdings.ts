@@ -22,7 +22,7 @@ export type HoldingRow = {
 export const isMissingColumn = (e: { message?: string } | null | undefined) =>
   !!e?.message && /column .* does not exist|Could not find the '.*' column/i.test(e.message);
 
-const kstDate = (iso: string) => new Date(iso).toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
+export const kstDate = (iso: string) => new Date(iso).toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
 
 export async function loadHoldings(): Promise<HoldingRow[]> {
   const q = () => db().from(T.holdings).select(`*, stocks:${T.stocks}(name, market)`);

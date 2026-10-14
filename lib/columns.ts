@@ -1,5 +1,8 @@
 import { useCallback, useSyncExternalStore } from "react";
 import type { ClientHolding } from "@/lib/types";
+import { elapsedDays } from "@/lib/dates";
+
+export { elapsedDays, dLabel } from "@/lib/dates";
 
 // 메인 표의 "구분(열)" 정의와, 컴퓨터(브라우저)별 순서/표시 설정.
 // 설정은 Supabase가 아니라 이 브라우저의 localStorage에 저장된다 → 컴퓨터마다 따로 기억.
@@ -113,14 +116,6 @@ export function gridVars(cols: ColKey[]): React.CSSProperties {
   const sm = [...cols.filter((c) => COLUMN_DEFS[c].sm).map((c) => COLUMN_DEFS[c].sm), "70px"].join(" ");
   return { "--cols-md": md, "--cols-sm": sm } as React.CSSProperties;
 }
-
-/** 매수일 기준 경과일 (한국시간 날짜 기준, 매수 당일 = 0) */
-export function elapsedDays(boughtAt: string, now = new Date()): number {
-  const today = now.toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
-  return Math.round((Date.parse(today) - Date.parse(boughtAt)) / 86_400_000);
-}
-
-export const dLabel = (n: number) => (n >= 0 ? `D+${n}` : `D${n}`);
 
 export function sortValue(h: ClientHolding, key: SortKey): string | number | null {
   switch (key) {
