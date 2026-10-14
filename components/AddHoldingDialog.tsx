@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Modal } from "./Modal";
 import { MarketBadge, StockCombobox } from "./StockCombobox";
@@ -59,18 +59,26 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   const [stock, setStock] = useState<StockHit | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [avg, setAvg] = useState("");
-  const [qty, setQty] = useState("");
   const [target, setTarget] = useState<number | null>(10);
   const [stop, setStop] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
-
+  const targetRef = useRef<HTMLInputElement>(null);
+  const previewRef = useRef<Promise<Preview> | null>(null); // 현재가 조회가 끝나기 전에 Enter가 눌려도 기다렸다가 추가
 
   async function choose(s: StockHit) {
     setStock(s);
     setPreview(null);
-    const res = await fetch(`/api/stocks/quote?code=${s.code}`);
-    const json = await res.json();
-    setPreview(res.ok ? { price: json.price, changePct: json.changePct } : { error: json.error ?? "현재가를 조회할 수 없어요" });
+    const load = (async (): Promise<Preview> => {
+      try {
+        const res = await fetch(`/api/stocks/quote?code=${s.code}`);
+        const json = await res.json();
+        return res.ok ? { price: json.price, changePct: json.changePct } : { error: json.error ?? "현재가를 조회할 수 없어요" };
+      } catch {
+        return { error: "현재가를 조회할 수 없어요" };
+      }
+    })();
+    previewRef.current = load;
+    setPreview(await load);
   }
 
   const avgNum = Number(avg);
@@ -79,16 +87,18 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   const canSubmit = !!stock && preview && "price" in preview && avgNum > 0 && !!target && !busy;
 
   async function submit() {
-    if (!stock || !target) return;
+    if (!stock || !target || !(avgNum > 0) || busy) return;
     setBusy(true);
     try {
+      const p = await previewRef.current;
+      if (!p || "error" in p) throw new Error(p && "error" in p ? p.error : "현재가를 조회할 수 없어요");
       const res = await fetch("/api/holdings", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           code: stock.code,
           avg_price: avgNum,
-          qty: qty ? Math.floor(Number(qty)) : null,
+          qty: 1,
           target_pct: target,
           stop_pct: stop,
         }),
@@ -139,36 +149,54 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
           </div>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold">매수 단가 (원)</span>
+            <span className="mb-1.5 block text-sm font-semibold">매수 단가 (원) <span className="font-normal text-muted">· Enter ↵ 다음</span></span>
             <div className="flex gap-2">
-              <input className={fieldCls} type="number" inputMode="decimal" min="0" value={avg} onChange={(e) => setAvg(e.target.value)} placeholder="예: 70000" />
+              <input
+                autoFocus
+                className={fieldCls}
+                type="number"
+                inputMode="decimal"
+                min="0"
+                value={avg}
+                onChange={(e) => setAvg(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && avgNum > 0) {
+                    e.preventDefault();
+                    targetRef.current?.focus();
+                  }
+                }}
+                placeholder="예: 70000"
+              />
               {preview && "price" in preview && (
-                <button type="button" onClick={() => setAvg(String(preview.price))} className="shrink-0 rounded-2xl bg-surface-2 px-4 text-sm font-semibold text-primary">
+                <button type="button" tabIndex={-1} onClick={() => setAvg(String(preview.price))} className="shrink-0 rounded-2xl bg-surface-2 px-4 text-sm font-semibold text-primary">
                   현재가
                 </button>
               )}
             </div>
           </label>
 
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold">
-              수량 <span className="font-normal text-muted">(선택 · 평가금액 계산용)</span>
-            </span>
-            <input className={fieldCls} type="number" inputMode="numeric" min="0" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="예: 10" />
-          </label>
-
           <div>
-            <span className="mb-1.5 block text-sm font-semibold">🔔 목표 수익률</span>
-            <Chips values={TARGET_CHIPS} value={target} onChange={setTarget} prefix="+" />
+            <span className="mb-1.5 block text-sm font-semibold">🔔 목표 수익률 (%) <span className="font-normal text-muted">· Enter ↵ 추가</span></span>
             <input
-              className={`${fieldCls} mt-2`}
+              ref={targetRef}
+              className={fieldCls}
               type="number"
               inputMode="decimal"
               min="0"
               value={target ?? ""}
+              onFocus={(e) => e.target.select()}
               onChange={(e) => setTarget(e.target.value ? Number(e.target.value) : null)}
-              placeholder="직접 입력 (%)"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void submit();
+                }
+              }}
+              placeholder="예: 10"
             />
+            <div className="mt-2">
+              <Chips values={TARGET_CHIPS} value={target} onChange={setTarget} prefix="+" />
+            </div>
             {targetPrice && <p className="mt-2 text-sm text-muted">₩{won(targetPrice)} 이상이 되면 알려드려요</p>}
           </div>
 

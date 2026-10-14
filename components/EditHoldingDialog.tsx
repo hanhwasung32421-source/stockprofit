@@ -21,7 +21,6 @@ export function EditHoldingDialog({
 
 function EditForm({ holding, onClose, onSaved }: { holding: ClientHolding; onClose: () => void; onSaved: () => void }) {
   const [avg, setAvg] = useState(String(holding.avg_price));
-  const [qty, setQty] = useState(holding.qty ? String(holding.qty) : "");
   const [target, setTarget] = useState<number | null>(holding.target_pct);
   const [stop, setStop] = useState<number | null>(holding.stop_pct);
   const [busy, setBusy] = useState(false);
@@ -33,7 +32,7 @@ function EditForm({ holding, onClose, onSaved }: { holding: ClientHolding; onClo
       const res = await fetch(`/api/holdings/${holding.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ avg_price: Number(avg), qty: qty ? Math.floor(Number(qty)) : null, target_pct: target, stop_pct: stop }),
+        body: JSON.stringify({ avg_price: Number(avg), qty: 1, target_pct: target, stop_pct: stop }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "저장하지 못했어요");
       toast.success("저장했어요");
@@ -52,10 +51,6 @@ function EditForm({ holding, onClose, onSaved }: { holding: ClientHolding; onClo
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold">매수 단가 (원)</span>
           <input className={fieldCls} type="number" inputMode="decimal" value={avg} onChange={(e) => setAvg(e.target.value)} />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-semibold">수량 (선택)</span>
-          <input className={fieldCls} type="number" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} />
         </label>
         <div>
           <span className="mb-1.5 block text-sm font-semibold">🔔 목표 수익률</span>

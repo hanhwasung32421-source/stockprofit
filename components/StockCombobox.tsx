@@ -48,6 +48,7 @@ export function StockCombobox({ onSelect }: { onSelect: (s: StockHit) => void })
   const loading = !!term && result.term !== term;
 
   const onKey = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing) return; // 한글 조합 중 Enter/방향키는 무시
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActive((a) => Math.min(a + 1, hits.length - 1));

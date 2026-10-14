@@ -1,11 +1,11 @@
 import { pct, tone, won } from "@/lib/format";
 import type { ClientHolding } from "@/lib/types";
 
-/** 한 줄 요약 바 (수량이 입력된 종목만 합계에 반영) */
+/** 한 줄 요약 바 (수량 1 기준) */
 export function SummaryCards({ holdings }: { holdings: ClientHolding[] }) {
-  const rows = holdings.filter((h) => h.qty && h.price);
-  const cost = rows.reduce((s, h) => s + h.avg_price * h.qty!, 0);
-  const value = rows.reduce((s, h) => s + h.price! * h.qty!, 0);
+  const rows = holdings.filter((h) => h.price);
+  const cost = rows.reduce((s, h) => s + h.avg_price * (h.qty ?? 1), 0);
+  const value = rows.reduce((s, h) => s + h.price! * (h.qty ?? 1), 0);
   const diff = value - cost;
   const rate = cost > 0 ? (diff / cost) * 100 : null;
 
@@ -23,7 +23,6 @@ export function SummaryCards({ holdings }: { holdings: ClientHolding[] }) {
           <b className={it.cls}>{it.value}</b>
         </span>
       ))}
-      {!rows.length && holdings.length > 0 && <span className="text-[11px] text-muted">수량을 입력하면 금액 합계가 표시돼요</span>}
     </section>
   );
 }

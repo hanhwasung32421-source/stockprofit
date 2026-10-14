@@ -16,7 +16,6 @@ export function HoldingHeader() {
       <div className="hidden text-right md:block">매수가</div>
       <div className="text-right">수익률</div>
       <div className="text-right">목표</div>
-      <div className="hidden text-right md:block">평가손익</div>
       <div />
     </div>
   );
@@ -51,7 +50,6 @@ export function HoldingRow({
   const profit = h.profitPct;
   const progress = profit != null && profit > 0 ? Math.min(profit / h.target_pct, 1) : 0;
   const triggered = h.alert_state === "triggered";
-  const pnl = h.qty && h.price ? (h.price - h.avg_price) * h.qty : null;
 
   return (
     <div
@@ -71,7 +69,6 @@ export function HoldingRow({
         <div className="num text-[10px] text-muted">
           {h.code}
           <span className="hidden sm:inline"> · {h.market}</span>
-          {h.qty ? ` · ${h.qty}주` : ""}
         </div>
       </div>
 
@@ -92,11 +89,6 @@ export function HoldingRow({
         <div className="ml-auto mt-0.5 h-1.5 w-full max-w-20 overflow-hidden rounded-full bg-surface-2 md:bg-border" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="목표 달성률">
           <div className={`h-full rounded-full ${progress >= 1 ? "bg-up" : "bg-primary"}`} style={{ width: `${progress * 100}%` }} />
         </div>
-      </div>
-
-      <div className={`num hidden text-right md:block ${tone(pnl)}`}>
-        {pnl != null ? `${pnl > 0 ? "+" : ""}${won(pnl)}` : "–"}
-        {h.stale && <div className="text-[10px] text-warn">지연</div>}
       </div>
 
       <div className="flex justify-end gap-0.5 text-muted">

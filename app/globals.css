@@ -76,7 +76,7 @@ body {
 }
 .pulse-ring { animation: pulse-ring 1.6s ease-in-out infinite; }
 
-/* HTS 스타일 한 줄 그리드: 모바일(5열) → 데스크톱(8열) */
+/* HTS 스타일 한 줄 그리드: 모바일(5열) → 데스크톱(7열) */
 .hts-grid {
   display: grid;
   align-items: center;
@@ -86,6 +86,6 @@ body {
 @media (min-width: 768px) {
   .hts-grid {
     column-gap: 12px;
-    grid-template-columns: minmax(0, 1.6fr) 1fr 0.8fr 1fr 0.9fr 1.1fr 1.1fr 112px;
+    grid-template-columns: minmax(0, 1.8fr) 1fr 0.8fr 1fr 0.9fr 1.2fr 112px;
   }
 }
