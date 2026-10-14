@@ -153,7 +153,7 @@ export function Dashboard() {
       {error && !data && <div className="rounded-2xl bg-up-soft p-4 text-sm text-up">{error instanceof Error ? error.message : "시세를 불러오지 못했어요"} (자동으로 다시 시도합니다)</div>}
       {data?.provider === "yahoo" && (
         <div className="mb-4 rounded-2xl bg-surface-2 px-4 py-2 text-xs text-muted">
-          ⚠️ 증권사 API 키가 없어 Yahoo Finance(지연 시세)를 쓰고 있어요. 실시간 알림은 KIS 키를 설정하세요.
+          ⚠️ 네이버 증권 시세를 가져오지 못해 Yahoo Finance(지연 시세)를 쓰고 있어요.
         </div>
       )}
 

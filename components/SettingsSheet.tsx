@@ -106,7 +106,7 @@ export function SettingsSheet({
           )}
         </section>
 
-        <section className="text-xs text-muted">시세 제공: {s?.provider === "kis" ? "한국투자증권 KIS (실시간)" : s?.provider === "yahoo" ? "Yahoo Finance (지연될 수 있음)" : "–"}</section>
+        <section className="text-xs text-muted">시세 제공: {s?.provider === "kis" ? "한국투자증권 KIS (실시간)" : s?.provider === "naver" ? "네이버 증권 (실시간, 비공식 · 장애 시 Yahoo로 자동 전환)" : s?.provider === "yahoo" ? "Yahoo Finance (지연될 수 있음)" : "–"}</section>
       </div>
     </Modal>
   );

@@ -1,11 +1,37 @@
 import { db } from "@/lib/supabase-server";
 import { isMarketOpen } from "./market-hours";
 import { KisProvider } from "./kis";
+import { NaverProvider } from "./naver";
 import { YahooProvider } from "./yahoo";
-import type { Quote, QuoteProvider } from "./provider";
+import type { Market, Quote, QuoteProvider } from "./provider";
 
+/** 앞 제공자가 못 가져온 종목은 다음 제공자로 넘기는 폴백 체인 */
+class ChainProvider implements QuoteProvider {
+  readonly name: string;
+  constructor(private chain: QuoteProvider[]) {
+    this.name = chain[0].name;
+  }
+  async fetchQuotes(items: { code: string; market: Market }[]): Promise<Quote[]> {
+    const got = new Map<string, Quote>();
+    for (const p of this.chain) {
+      const rest = items.filter((i) => !got.has(i.code));
+      if (!rest.length) break;
+      try {
+        for (const q of await p.fetchQuotes(rest)) got.set(q.code, q);
+      } catch (e) {
+        console.error(`[quotes] ${p.name} failed`, e);
+      }
+    }
+    return [...got.values()];
+  }
+}
+
+/** KIS 키가 있으면 KIS(공식·실시간) → 네이버(실시간, 비공식) → Yahoo(지연) 순 */
 export function getProvider(): QuoteProvider {
-  return process.env.KIS_APP_KEY && process.env.KIS_APP_SECRET ? new KisProvider() : new YahooProvider();
+  const chain: QuoteProvider[] = [];
+  if (process.env.KIS_APP_KEY && process.env.KIS_APP_SECRET) chain.push(new KisProvider());
+  chain.push(new NaverProvider(), new YahooProvider());
+  return new ChainProvider(chain);
 }
 
 export type CachedQuote = Quote & { stale: boolean };

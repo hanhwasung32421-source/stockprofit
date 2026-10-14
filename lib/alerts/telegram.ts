@@ -4,7 +4,10 @@ const api = (method: string) => `https://api.telegram.org/bot${process.env.TELEG
 
 export const telegramConfigured = () => !!process.env.TELEGRAM_BOT_TOKEN;
 
+/** TELEGRAM_CHAT_ID 환경변수가 있으면 그 방으로 고정, 없으면 /start 로 저장된 방 */
 export async function getChatId(): Promise<number | null> {
+  const fixed = Number(process.env.TELEGRAM_CHAT_ID);
+  if (process.env.TELEGRAM_CHAT_ID && Number.isFinite(fixed)) return fixed;
   return kvGet<number>("telegram_chat_id");
 }
 
