@@ -12,7 +12,7 @@ export function AlertBanner({ events, onAck }: { events: AlertEvent[]; onAck: ()
       <ul className="min-w-0 flex-1 space-y-0.5">
         {events.slice(0, 5).map((e) => (
           <li key={e.id} className="text-[13px] font-semibold text-up">
-            {e.kind === "target" ? "목표 도달" : "손절 도달"} · {e.name}{" "}
+            목표 도달 · {e.name}{" "}
             <span className="num">
               {pct(Number(e.profit_pct))} (₩{won(Number(e.price))})
             </span>

@@ -6,10 +6,9 @@ export type ClientHolding = {
   avg_price: number;
   qty: number | null;
   target_pct: number;
-  stop_pct: number | null;
   enabled: boolean;
   alert_state: "armed" | "triggered";
-  triggered_kind: "target" | "stop" | null;
+  triggered_kind: "target" | null;
   triggered_at: string | null;
   bought_at: string;
   sort_order: number | null;
@@ -24,7 +23,7 @@ export type AlertEvent = {
   id: string;
   code: string;
   name: string;
-  kind: "target" | "stop";
+  kind: "target";
   price: number;
   profit_pct: number;
   created_at: string;

@@ -4,14 +4,11 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Modal } from "./Modal";
 import { MarketBadge, StockCombobox } from "./StockCombobox";
-import { btnGhost, btnPrimary, Chips, FieldRow, inputCls } from "./ui";
+import { btnGhost, btnPrimary, FieldRow, inputCls } from "./ui";
 import { won, pct, tone } from "@/lib/format";
 import type { StockHit } from "@/lib/types";
 
 type Preview = { price: number; changePct: number | null } | { error: string };
-
-const TARGET_CHIPS = [5, 10, 20, 30];
-const STOP_CHIPS = [5, 10, 15];
 
 /** 열릴 때마다 새로 마운트되어 입력 상태가 자동 초기화된다 */
 export function AddHoldingDialog({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: () => void }) {
@@ -24,7 +21,6 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   const [preview, setPreview] = useState<Preview | null>(null);
   const [avg, setAvg] = useState("");
   const [target, setTarget] = useState<number | null>(10);
-  const [stop, setStop] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const targetRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<Promise<Preview> | null>(null); // 현재가 조회가 끝나기 전에 Enter가 눌려도 기다렸다가 추가
@@ -47,7 +43,6 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
 
   const avgNum = Number(avg);
   const targetPrice = target && avgNum > 0 ? Math.round(avgNum * (1 + target / 100)) : null;
-  const stopPrice = stop && avgNum > 0 ? Math.round(avgNum * (1 - stop / 100)) : null;
   const canSubmit = !!stock && preview && "price" in preview && avgNum > 0 && !!target && !busy;
 
   async function submit() {
@@ -59,7 +54,7 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
       const res = await fetch("/api/holdings", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code: stock.code, avg_price: avgNum, qty: 1, target_pct: target, stop_pct: stop }),
+        body: JSON.stringify({ code: stock.code, avg_price: avgNum, qty: 1, target_pct: target }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "추가하지 못했어요");
@@ -154,13 +149,9 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
                   />
                   <span className="text-xs text-muted">%</span>
                 </div>
-                <Chips values={TARGET_CHIPS} value={target} onChange={setTarget} prefix="+" />
               </div>
             </FieldRow>
 
-            <FieldRow label="손절(선택)" hint={stopPrice ? `손절가 ${won(stopPrice)}` : undefined}>
-              <Chips values={STOP_CHIPS} value={stop} onChange={setStop} prefix="-" none="없음" />
-            </FieldRow>
           </div>
 
           <div className="mt-3 flex items-center justify-between">

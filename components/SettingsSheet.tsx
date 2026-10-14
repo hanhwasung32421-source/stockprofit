@@ -137,7 +137,7 @@ export function SettingsSheet({
                 {events.map((e) => (
                   <div key={e.id} className="num flex border-b border-border/60 px-2 py-0.5 text-xs last:border-b-0">
                     <span className="flex-1 truncate font-sans font-semibold">{e.name}</span>
-                    <span className="w-10 font-sans">{e.kind === "target" ? "목표" : "손절"}</span>
+                    <span className="w-10 font-sans">목표</span>
                     <span className={`w-16 text-right ${tone(Number(e.profit_pct))}`}>{pct(Number(e.profit_pct))}</span>
                     <span className="w-20 text-right">{won(Number(e.price))}</span>
                     <span className="w-24 text-right text-muted">

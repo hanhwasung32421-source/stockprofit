@@ -9,10 +9,9 @@ export type HoldingRow = {
   avg_price: number;
   qty: number | null;
   target_pct: number;
-  stop_pct: number | null;
   enabled: boolean;
   alert_state: "armed" | "triggered";
-  triggered_kind: "target" | "stop" | null;
+  triggered_kind: "target" | null;
   triggered_at: string | null;
   created_at: string;
   bought_at: string; // YYYY-MM-DD (추가한 날, 수정 가능)
@@ -37,7 +36,6 @@ export async function loadHoldings(): Promise<HoldingRow[]> {
       ...rest,
       avg_price: Number(h.avg_price),
       target_pct: Number(h.target_pct),
-      stop_pct: h.stop_pct === null ? null : Number(h.stop_pct),
       name: stocks?.name ?? h.code,
       market: stocks?.market ?? "",
       bought_at: h.bought_at ?? kstDate(h.created_at),

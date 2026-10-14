@@ -24,38 +24,3 @@ export function FieldRow({ label, hint, children }: { label: string; hint?: stri
 export function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="border-b border-border bg-surface-2 px-2 py-1 text-xs font-bold text-muted">{children}</h3>;
 }
-
-/** 작은 사각 선택 버튼 (예: +5% +10%) */
-export function Chips({
-  values,
-  value,
-  onChange,
-  prefix,
-  none,
-}: {
-  values: number[];
-  value: number | null;
-  onChange: (v: number | null) => void;
-  prefix: string;
-  none?: string;
-}) {
-  const cls = (on: boolean) =>
-    `rounded-sm border px-2 py-0.5 text-xs font-semibold ${
-      on ? "border-primary bg-primary text-primary-fg" : "border-border bg-surface hover:bg-surface-2"
-    }`;
-  return (
-    <div className="flex flex-wrap gap-1">
-      {none && (
-        <button type="button" tabIndex={-1} onClick={() => onChange(null)} className={cls(value === null)}>
-          {none}
-        </button>
-      )}
-      {values.map((v) => (
-        <button type="button" tabIndex={-1} key={v} onClick={() => onChange(v)} className={cls(value === v)}>
-          {prefix}
-          {v}%
-        </button>
-      ))}
-    </div>
-  );
-}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Modal } from "./Modal";
-import { btnGhost, btnPrimary, Chips, FieldRow, inputCls } from "./ui";
+import { btnGhost, btnPrimary, FieldRow, inputCls } from "./ui";
 import { won } from "@/lib/format";
 import type { ClientHolding } from "@/lib/types";
 
@@ -23,7 +23,6 @@ export function EditHoldingDialog({
 function EditForm({ holding, onClose, onSaved }: { holding: ClientHolding; onClose: () => void; onSaved: () => void }) {
   const [avg, setAvg] = useState(String(holding.avg_price));
   const [target, setTarget] = useState<number | null>(holding.target_pct);
-  const [stop, setStop] = useState<number | null>(holding.stop_pct);
   const [busy, setBusy] = useState(false);
 
   const avgNum = Number(avg);
@@ -36,7 +35,7 @@ function EditForm({ holding, onClose, onSaved }: { holding: ClientHolding; onClo
       const res = await fetch(`/api/holdings/${holding.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ avg_price: avgNum, qty: 1, target_pct: target, stop_pct: stop }),
+        body: JSON.stringify({ avg_price: avgNum, qty: 1, target_pct: target }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "저장하지 못했어요");
       toast.success("저장했어요");
@@ -64,7 +63,7 @@ function EditForm({ holding, onClose, onSaved }: { holding: ClientHolding; onClo
       </div>
       <div className="mt-1">
         <FieldRow label="매수단가">
-          <input className={inputCls} type="number" inputMode="decimal" value={avg} onChange={(e) => setAvg(e.target.value)} onKeyDown={onEnter} aria-label="매수단가" />
+          <input autoFocus onFocus={(e) => e.target.select()} className={inputCls} type="number" inputMode="decimal" value={avg} onChange={(e) => setAvg(e.target.value)} onKeyDown={onEnter} aria-label="매수단가" />
         </FieldRow>
         <FieldRow label="목표수익률" hint={target && avgNum > 0 ? `목표가 ${won(Math.round(avgNum * (1 + target / 100)))}` : undefined}>
           <div className="flex items-center gap-2">
@@ -80,15 +79,11 @@ function EditForm({ holding, onClose, onSaved }: { holding: ClientHolding; onClo
               />
               <span className="text-xs text-muted">%</span>
             </div>
-            <Chips values={[5, 10, 20, 30]} value={target} onChange={setTarget} prefix="+" />
           </div>
-        </FieldRow>
-        <FieldRow label="손절(선택)">
-          <Chips values={[5, 10, 15]} value={stop} onChange={setStop} prefix="-" none="없음" />
         </FieldRow>
       </div>
       <div className="mt-3 flex items-center justify-between">
-        <span className="text-[11px] text-muted">조건을 바꾸면 알림이 다시 활성화됩니다</span>
+        <span className="text-[11px] text-muted">Enter ↵ 저장 · 조건을 바꾸면 알림이 다시 활성화됩니다</span>
         <div className="flex gap-1">
           <button onClick={onClose} className={btnGhost}>
             취소

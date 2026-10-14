@@ -9,7 +9,6 @@ const patchSchema = z
     avg_price: z.number().positive(),
     qty: z.number().int().positive().nullable(),
     target_pct: z.number().positive().max(1000),
-    stop_pct: z.number().positive().max(100).nullable(),
     enabled: z.boolean(),
     rearm: z.boolean(),
     bought_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -24,8 +23,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (!parsed.success) return NextResponse.json({ error: "입력값을 확인해 주세요" }, { status: 400 });
   const { rearm, ...fields } = parsed.data;
 
-  // 조건(단가/목표/손절)이 바뀌거나 사용자가 다시 켜면 알람을 재무장
-  const conditionChanged = "avg_price" in fields || "target_pct" in fields || "stop_pct" in fields;
+  // 조건(단가/목표)이 바뀌거나 사용자가 다시 켜면 알람을 재무장
+  const conditionChanged = "avg_price" in fields || "target_pct" in fields;
   const update: Record<string, unknown> = { ...fields };
   if (rearm || conditionChanged || fields.enabled === true) {
     update.alert_state = "armed";

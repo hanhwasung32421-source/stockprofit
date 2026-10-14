@@ -139,7 +139,7 @@ export function HoldingRow({
         <div className="min-w-0">
           <div className="flex items-center gap-1 truncate font-bold">
             {triggered && (
-              <button onClick={onRearm} title="알림 발동됨 — 눌러서 다시 켜기" aria-label="알림 다시 켜기" className="shrink-0">
+              <button onClick={onRearm} title="목표 도달 — 눌러서 알림 다시 켜기" aria-label="알림 다시 켜기" className="shrink-0">
                 🔔
               </button>
             )}
@@ -168,7 +168,7 @@ export function HoldingRow({
     target: (
       <div className="num">
         <div className="text-[11px] text-muted">
-          +{h.target_pct}%{h.stop_pct != null && <span className="hidden md:inline"> / -{h.stop_pct}%</span>}
+          +{h.target_pct}%
         </div>
         <div className="ml-auto mt-0.5 h-1.5 w-full max-w-20 overflow-hidden rounded-full bg-surface-2 md:bg-border" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="목표 달성률">
           <div className={`h-full rounded-full ${progress >= 1 ? "bg-up" : "bg-primary"}`} style={{ width: `${progress * 100}%` }} />

@@ -11,7 +11,6 @@ const createSchema = z.object({
   avg_price: z.number().positive(),
   qty: z.number().int().positive().nullable().optional(),
   target_pct: z.number().positive().max(1000),
-  stop_pct: z.number().positive().max(100).nullable().optional(),
   bought_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // 생략 시 DB 기본값 = 오늘(KST)
 });
 
@@ -34,7 +33,6 @@ export async function POST(req: Request) {
     avg_price: body.avg_price,
     qty: body.qty ?? null,
     target_pct: body.target_pct,
-    stop_pct: body.stop_pct ?? null,
   };
   // 새 종목은 맨 아래로 (sort_order = 현재 최대값 + 1). 컬럼이 아직 없으면 기본 필드만 저장.
   const last = await db().from(T.holdings).select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();

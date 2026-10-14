@@ -23,10 +23,8 @@ export async function evaluateAlerts(holdings: HoldingRow[], quotes: Map<string,
     const pct = profitPct(q.price, h.avg_price);
 
     if (h.alert_state === "triggered") {
-      const rearm =
-        (h.triggered_kind === "target" && pct < h.target_pct - REARM_BAND) ||
-        (h.triggered_kind === "stop" && h.stop_pct !== null && pct > -h.stop_pct + REARM_BAND);
-      if (rearm) {
+      // 수익률이 목표보다 REARM_BAND 아래로 내려가면 다시 무장
+      if (pct < h.target_pct - REARM_BAND) {
         await db()
           .from(T.holdings)
           .update({ alert_state: "armed", triggered_kind: null, triggered_at: null })
@@ -36,13 +34,11 @@ export async function evaluateAlerts(holdings: HoldingRow[], quotes: Map<string,
       continue;
     }
 
-    const kind: "target" | "stop" | null =
-      pct >= h.target_pct ? "target" : h.stop_pct !== null && pct <= -h.stop_pct ? "stop" : null;
-    if (!kind) continue;
+    if (pct < h.target_pct) continue;
 
     const { data: won_ } = await db()
       .from(T.holdings)
-      .update({ alert_state: "triggered", triggered_kind: kind, triggered_at: new Date().toISOString() })
+      .update({ alert_state: "triggered", triggered_kind: "target", triggered_at: new Date().toISOString() })
       .eq("id", h.id)
       .eq("alert_state", "armed")
       .select("id");
@@ -53,14 +49,15 @@ export async function evaluateAlerts(holdings: HoldingRow[], quotes: Map<string,
       holding_id: h.id,
       code: h.code,
       name: h.name,
-      kind,
+      kind: "target",
       price: q.price,
       profit_pct: pct,
     });
-    const icon = kind === "target" ? "🔔🔴" : "⚠️🔵";
-    const label = kind === "target" ? `목표 수익률 +${h.target_pct}% 도달` : `손절 기준 -${h.stop_pct}% 도달`;
     await sendTelegram(
-      `${icon} <b>${h.name}</b> (${h.code})\n${label}\n현재가 ${won(q.price)}원 · 매수단가 ${won(h.avg_price)}원\n수익률 <b>${sign(pct)}%</b>`,
+      `🔔🔴 <b>${h.name}</b> (${h.code})
+목표 수익률 +${h.target_pct}% 도달
+현재가 ${won(q.price)}원 · 매수단가 ${won(h.avg_price)}원
+수익률 <b>${sign(pct)}%</b>`,
     );
   }
   return fired;

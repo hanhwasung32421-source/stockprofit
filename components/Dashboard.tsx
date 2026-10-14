@@ -94,7 +94,7 @@ export function Dashboard() {
     fresh.forEach((e) => known.current!.add(e.id));
     setPending((p) => [...fresh, ...p]);
     for (const e of fresh) {
-      notifyBrowser(`${e.kind === "target" ? "🔔 목표 도달" : "⚠️ 손절 기준 도달"} · ${e.name}`, `수익률 ${pct(Number(e.profit_pct))}`);
+      notifyBrowser(`🔔 목표 도달 · ${e.name}`, `수익률 ${pct(Number(e.profit_pct))}`);
     }
     if (soundOn) void playAlarm();
   }, [data, soundOn]);
@@ -132,7 +132,7 @@ export function Dashboard() {
           await fetch("/api/holdings", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ code: h.code, avg_price: h.avg_price, qty: h.qty, target_pct: h.target_pct, stop_pct: h.stop_pct }),
+            body: JSON.stringify({ code: h.code, avg_price: h.avg_price, qty: h.qty, target_pct: h.target_pct }),
           });
           mutate();
         },
