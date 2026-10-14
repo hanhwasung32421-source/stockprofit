@@ -48,8 +48,9 @@ const POLL_MS = 7_000; // 시세 갱신 주기
 
 export function Dashboard() {
   // 자동 갱신은 매일 08:00–19:00(KST)에만. 그 밖의 시간에는 화면을 열 때 한 번만 가져온다.
-  // (1초마다 리렌더되는 tick 덕분에 08:00이 되면 자동으로 다시 갱신이 시작된다)
-  const inRefreshHours = isRefreshHours();
+  // 현재 시각은 렌더 중에 읽지 않고(프리렌더 금지) 1초마다 state로 갱신한다 → 08:00이 되면 자동으로 다시 시작
+  const [nowMs, setNowMs] = useState<number | null>(null);
+  const inRefreshHours = nowMs === null ? true : isRefreshHours(new Date(nowMs));
   const { data, error, isLoading, mutate } = useSWR<QuotesResponse>("/api/quotes", fetcher, {
     refreshInterval: inRefreshHours ? POLL_MS : 0,
     keepPreviousData: true,
@@ -67,7 +68,6 @@ export function Dashboard() {
   const [localOrder, setLocalOrder] = useState<string[] | null>(null); // 드래그 직후 즉시 반영용
   const [dragId, setDragId] = useState<string | null>(null);
   const [drop, setDrop] = useState<{ id: string; pos: Exclude<DropPos, null> } | null>(null);
-  const [, tick] = useState(0);
   const [title, setTitle] = useAppTitle();
   const [editingTitle, setEditingTitle] = useState(false);
   const titleClicks = useRef<number[]>([]);
@@ -75,8 +75,12 @@ export function Dashboard() {
   const cols = useMemo(() => visibleCols(prefs), [prefs]);
 
   useEffect(() => {
-    const t = setInterval(() => tick((n) => n + 1), 1000); // "n초 전" 갱신
-    return () => clearInterval(t);
+    const first = setTimeout(() => setNowMs(Date.now()), 0);
+    const t = setInterval(() => setNowMs(Date.now()), 1000); // "n초 전"·갱신 시간대 판정용
+    return () => {
+      clearTimeout(first);
+      clearInterval(t);
+    };
   }, []);
 
   // 08:00이 되어 갱신 시간이 시작되는 순간 바로 한 번 가져온다 (처음 마운트 때는 SWR이 이미 가져옴)
