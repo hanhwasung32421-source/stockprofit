@@ -73,7 +73,7 @@ function Investors({ inv }: { inv: NonNullable<IndexData["investors"]> }) {
     ["기관", inv.institution],
   ] as const;
   return (
-    <div className="mt-1.5 flex gap-4 text-[11px]">
+    <div className="flex gap-5 text-xs">
       {items.map(([label, v]) => (
         <span key={label} className="num flex flex-col leading-tight">
           <span className="text-muted">{label}</span>
@@ -84,7 +84,7 @@ function Investors({ inv }: { inv: NonNullable<IndexData["investors"]> }) {
   );
 }
 
-/** 코스피/코스닥: 큰 카드 (수치 + 차트 + 개인/외국인/기관) */
+/** 코스피/코스닥: 큰 카드 — 왼쪽 수치, 오른쪽에 카드 높이만큼 큰 차트, 아래에 개인/외국인/기관 */
 function BigCard({ d }: { d: IndexData }) {
   const flash = useFlash(d.price);
   return (
@@ -93,22 +93,27 @@ function BigCard({ d }: { d: IndexData }) {
       target="_blank"
       rel="noopener noreferrer"
       title={`${d.name} — 토스증권에서 보기`}
-      className="block min-w-0 rounded-lg border border-border bg-surface px-3 py-2 transition-colors hover:bg-surface-2"
+      className="block min-w-0 rounded-lg border border-border bg-surface px-3.5 py-3 transition-colors hover:bg-surface-2"
     >
-      <div className="flex items-center gap-2">
-        <span className="text-[13px] font-bold">{d.name}</span>
-        <span className={`rounded px-1.5 py-px text-[10px] font-semibold ${d.open ? "bg-up-soft text-up" : "bg-surface-2 text-muted"}`}>{d.open ? "장중" : "장마감"}</span>
-      </div>
-      <div className="mt-1 flex items-end justify-between gap-2">
+      <div className="grid grid-cols-1 gap-y-2 md:grid-cols-[auto_1fr] md:gap-x-4">
         <div className="min-w-0">
-          <div className={`num inline-block rounded px-0.5 text-xl font-extrabold leading-tight ${tone(d.change)} ${flash}`}>{fmt(d.price)}</div>
-          <div className={`num text-[12px] font-semibold ${tone(d.change)}`}>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold">{d.name}</span>
+            <span className={`rounded px-1.5 py-px text-[10px] font-semibold ${d.open ? "bg-up-soft text-up" : "bg-surface-2 text-muted"}`}>{d.open ? "장중" : "장마감"}</span>
+          </div>
+          <div className={`num mt-1.5 inline-block rounded px-0.5 text-[26px] font-extrabold leading-none ${tone(d.change)} ${flash}`}>{fmt(d.price)}</div>
+          <div className={`num mt-1.5 text-[13px] font-semibold ${tone(d.change)}`}>
             {signed(d.change)} ({fmt(Math.abs(d.changePct))}%)
           </div>
         </div>
-        <Spark d={d} className="h-12 w-28 shrink-0 sm:w-36" />
+        {/* 카드 높이를 꽉 채우는 큰 차트 */}
+        <Spark d={d} className="h-20 w-full md:h-full md:min-h-[112px]" />
       </div>
-      {d.investors && <Investors inv={d.investors} />}
+      {d.investors && (
+        <div className="mt-2.5 border-t border-border/60 pt-2">
+          <Investors inv={d.investors} />
+        </div>
+      )}
     </a>
   );
 }
@@ -122,19 +127,19 @@ function SmallCard({ d }: { d: IndexData }) {
       target="_blank"
       rel="noopener noreferrer"
       title={`${d.name} — 토스증권에서 보기`}
-      className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 transition-colors hover:bg-surface-2"
+      className="flex min-w-0 flex-col gap-1 rounded-lg border border-border bg-surface px-3 py-2 transition-colors hover:bg-surface-2 md:flex-row md:items-center md:justify-between md:gap-2"
     >
       <div className="min-w-0">
         <div className="flex items-center gap-1 text-[11px]">
-          <span className="font-semibold">{d.name}</span>
-          {!d.open && <span className="text-[10px] text-muted">마감</span>}
+          <span className="whitespace-nowrap font-semibold">{d.name}</span>
+          {!d.open && <span className="whitespace-nowrap text-[10px] text-muted">마감</span>}
         </div>
         <div className={`num inline-block rounded px-0.5 text-[13px] font-bold leading-tight ${tone(d.change)} ${flash}`}>{fmt(d.price)}</div>
         <div className={`num text-[11px] ${tone(d.change)}`}>
           {signed(d.change)} ({fmt(Math.abs(d.changePct))}%)
         </div>
       </div>
-      <Spark d={d} className="h-8 w-14 shrink-0" />
+      <Spark d={d} className="h-10 w-full md:h-14 md:w-28 md:shrink-0" />
     </a>
   );
 }
@@ -150,15 +155,15 @@ export function IndexBar({ live }: { live: boolean }) {
 
   if (!data) {
     return (
-      <div className="mb-2 grid gap-2 md:grid-cols-[1fr_1fr_minmax(190px,0.6fr)]" aria-hidden>
+      <div className="mb-2 grid gap-2 md:grid-cols-[1fr_1fr_minmax(240px,0.7fr)]" aria-hidden>
         {[0, 1, 2].map((i) => (
-          <div key={i} className="h-[92px] animate-pulse rounded-lg bg-surface-2" />
+          <div key={i} className="h-[140px] animate-pulse rounded-lg bg-surface-2" />
         ))}
       </div>
     );
   }
   return (
-    <section aria-label="주요 지수" className="mb-2 grid grid-cols-2 gap-2 md:grid-cols-[1fr_1fr_minmax(190px,0.6fr)]">
+    <section aria-label="주요 지수" className="mb-2 grid grid-cols-2 gap-2 md:grid-cols-[1fr_1fr_minmax(240px,0.7fr)]">
       {kospi && <BigCard d={kospi} />}
       {kosdaq && <BigCard d={kosdaq} />}
       <div className="col-span-2 grid grid-cols-2 gap-2 md:col-span-1 md:grid-cols-1">
