@@ -15,6 +15,7 @@ import { SummaryCards } from "./SummaryCards";
 import { AlertBanner } from "./AlertBanner";
 import { SettingsSheet } from "./SettingsSheet";
 import { HistoryDialog } from "./HistoryDialog";
+import { IndexBar } from "./IndexBar";
 import { notifyBrowser, playAlarm, stopAlarm, unlockAudio } from "@/lib/alarm";
 import { pct, timeAgo } from "@/lib/format";
 import { useLocalFlag } from "@/lib/use-local-flag";
@@ -258,6 +259,8 @@ export function Dashboard() {
           </button>
         </div>
       </header>
+
+      <IndexBar live={inRefreshHours} />
 
       {!soundOn && (
         <button onClick={() => changeSound(true)} className="mb-2 w-full rounded-lg border border-dashed border-primary bg-down-soft px-3 py-1.5 text-left text-xs font-semibold text-primary">
