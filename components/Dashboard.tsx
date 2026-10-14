@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Plus, Settings } from "lucide-react";
 import { AddHoldingDialog } from "./AddHoldingDialog";
 import { EditHoldingDialog } from "./EditHoldingDialog";
-import { HoldingCard } from "./HoldingCard";
+import { HoldingHeader, HoldingRow } from "./HoldingRow";
 import { SummaryCards } from "./SummaryCards";
 import { AlertBanner } from "./AlertBanner";
 import { SettingsSheet } from "./SettingsSheet";
@@ -123,61 +123,64 @@ export function Dashboard() {
   const lastQuoted = holdings.map((h) => h.quotedAt).filter(Boolean).sort().pop();
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pb-32 pt-4 sm:px-6">
-      <header className="mb-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-extrabold">📈 수익률 알리미</h1>
+    <div className="mx-auto max-w-6xl px-2 pb-10 pt-2 sm:px-4">
+      <header className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <h1 className="truncate text-base font-extrabold">📈 수익률 알리미</h1>
           {data && (
-            <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${data.marketOpen ? "bg-up-soft text-up" : "bg-surface-2 text-muted"}`}>
-              <span className={`h-2 w-2 rounded-full ${data.marketOpen ? "animate-pulse bg-up" : "bg-muted"}`} />
-              {data.marketOpen ? "장중" : "장 마감"}
+            <span className={`flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold ${data.marketOpen ? "bg-up-soft text-up" : "bg-surface-2 text-muted"}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${data.marketOpen ? "animate-pulse bg-up" : "bg-muted"}`} />
+              {data.marketOpen ? "장중" : "장마감"}
             </span>
           )}
+          <span className="num hidden text-[11px] text-muted sm:inline">{lastQuoted ? `시세 ${timeAgo(lastQuoted)}` : ""}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="mr-2 hidden text-xs text-muted sm:inline">{lastQuoted ? `시세 ${timeAgo(lastQuoted)}` : ""}</span>
-          <button onClick={() => setSettingsOpen(true)} aria-label="알림 설정" className="rounded-full p-2.5 hover:bg-surface-2">
-            <Settings size={20} />
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={() => setAddOpen(true)}
+            className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-bold text-primary-fg hover:opacity-90"
+          >
+            <Plus size={16} strokeWidth={3} /> 종목추가
+          </button>
+          <button onClick={() => setSettingsOpen(true)} aria-label="알림 설정" className="rounded-lg p-2 hover:bg-surface-2">
+            <Settings size={18} />
           </button>
         </div>
       </header>
 
       {!soundOn && (
-        <button onClick={() => changeSound(true)} className="mb-4 w-full rounded-2xl border border-dashed border-primary bg-down-soft px-4 py-3 text-left text-sm font-semibold text-primary">
-          🔔 소리·팝업 알림 켜기 <span className="font-normal text-muted">— 목표 도달 시 바로 알려드려요 (탭 닫아도 받으려면 텔레그램 설정)</span>
+        <button onClick={() => changeSound(true)} className="mb-2 w-full rounded-lg border border-dashed border-primary bg-down-soft px-3 py-1.5 text-left text-xs font-semibold text-primary">
+          🔔 소리·팝업 알림 켜기 <span className="font-normal text-muted">— 목표 도달 시 바로 알려드려요</span>
         </button>
       )}
 
       <AlertBanner events={pending} onAck={ack} />
 
-      {error && !data && <div className="rounded-2xl bg-up-soft p-4 text-sm text-up">{error instanceof Error ? error.message : "시세를 불러오지 못했어요"} (자동으로 다시 시도합니다)</div>}
+      {error && !data && <div className="mb-2 rounded-lg bg-up-soft px-3 py-2 text-xs text-up">{error instanceof Error ? error.message : "시세를 불러오지 못했어요"} (자동으로 다시 시도합니다)</div>}
       {data?.provider === "yahoo" && (
-        <div className="mb-4 rounded-2xl bg-surface-2 px-4 py-2 text-xs text-muted">
+        <div className="mb-2 rounded-lg bg-surface-2 px-3 py-1.5 text-[11px] text-muted">
           ⚠️ 네이버 증권 시세를 가져오지 못해 Yahoo Finance(지연 시세)를 쓰고 있어요.
         </div>
       )}
 
       {isLoading && !data ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {[0, 1].map((i) => (
-            <div key={i} className="h-56 animate-pulse rounded-3xl bg-surface-2" />
+        <div className="space-y-1">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-12 animate-pulse rounded bg-surface-2" />
           ))}
         </div>
       ) : holdings.length === 0 ? (
-        <div className="mt-10 flex flex-col items-center rounded-3xl border border-dashed border-border bg-surface px-6 py-16 text-center">
-          <div className="text-5xl">📊</div>
-          <h2 className="mt-4 text-lg font-bold">아직 등록한 종목이 없어요</h2>
-          <p className="mt-1 text-sm text-muted">종목과 매수단가, 목표 수익률을 입력하면 도달 시 알려드려요.</p>
-          <button onClick={() => setAddOpen(true)} className="mt-6 flex items-center gap-2 rounded-2xl bg-primary px-6 py-3.5 font-bold text-primary-fg">
-            <Plus size={20} /> 첫 종목 추가하기
-          </button>
+        <div className="rounded-lg border border-dashed border-border bg-surface px-4 py-10 text-center">
+          <p className="text-sm font-semibold">등록한 종목이 없어요</p>
+          <p className="mt-1 text-xs text-muted">위의 <b>+ 종목추가</b>를 눌러 종목과 매수가, 목표 수익률을 입력하세요.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2">
           <SummaryCards holdings={holdings} />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="overflow-hidden rounded-lg border border-border bg-surface">
+            <HoldingHeader />
             {holdings.map((h) => (
-              <HoldingCard
+              <HoldingRow
                 key={h.id}
                 h={h}
                 onEdit={() => setEditing(h)}
@@ -190,17 +193,7 @@ export function Dashboard() {
         </div>
       )}
 
-      {holdings.length > 0 && (
-        <button
-          onClick={() => setAddOpen(true)}
-          aria-label="종목 추가"
-          className="fixed bottom-6 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-fg shadow-xl transition hover:scale-105 sm:bottom-8 sm:right-8"
-        >
-          <Plus size={30} />
-        </button>
-      )}
-
-      <footer className="num mt-10 text-center text-xs text-muted">v{APP_VERSION}</footer>
+      <footer className="num mt-6 text-center text-[11px] text-muted">v{APP_VERSION}</footer>
 
       <AddHoldingDialog open={addOpen} onClose={() => setAddOpen(false)} onAdded={() => mutate()} />
       <EditHoldingDialog holding={editing} onClose={() => setEditing(null)} onSaved={() => mutate()} />

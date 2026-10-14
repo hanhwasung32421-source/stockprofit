@@ -75,3 +75,17 @@ body {
   50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--up) 0%, transparent); }
 }
 .pulse-ring { animation: pulse-ring 1.6s ease-in-out infinite; }
+
+/* HTS 스타일 한 줄 그리드: 모바일(5열) → 데스크톱(8열) */
+.hts-grid {
+  display: grid;
+  align-items: center;
+  column-gap: 8px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(0, 0.9fr) 50px 70px;
+}
+@media (min-width: 768px) {
+  .hts-grid {
+    column-gap: 12px;
+    grid-template-columns: minmax(0, 1.6fr) 1fr 0.8fr 1fr 0.9fr 1.1fr 1.1fr 112px;
+  }
+}

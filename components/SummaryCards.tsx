@@ -1,8 +1,8 @@
 import { pct, tone, won } from "@/lib/format";
 import type { ClientHolding } from "@/lib/types";
 
+/** 한 줄 요약 바 (수량이 입력된 종목만 합계에 반영) */
 export function SummaryCards({ holdings }: { holdings: ClientHolding[] }) {
-  // 수량이 입력된 종목만 금액 합계에 반영
   const rows = holdings.filter((h) => h.qty && h.price);
   const cost = rows.reduce((s, h) => s + h.avg_price * h.qty!, 0);
   const value = rows.reduce((s, h) => s + h.price! * h.qty!, 0);
@@ -10,25 +10,20 @@ export function SummaryCards({ holdings }: { holdings: ClientHolding[] }) {
   const rate = cost > 0 ? (diff / cost) * 100 : null;
 
   const items = [
-    { label: "총 매수금액", value: rows.length ? `₩${won(cost)}` : "–", cls: "" },
-    { label: "총 평가금액", value: rows.length ? `₩${won(value)}` : "–", cls: "" },
-    {
-      label: "총 수익",
-      value: rate != null ? `${diff > 0 ? "+" : ""}${won(diff)}원 (${pct(rate)})` : "–",
-      cls: tone(diff),
-    },
+    { label: "매수", value: rows.length ? won(cost) : "–", cls: "" },
+    { label: "평가", value: rows.length ? won(value) : "–", cls: "" },
+    { label: "손익", value: rate != null ? `${diff > 0 ? "+" : ""}${won(diff)} (${pct(rate)})` : "–", cls: tone(diff) },
   ];
   return (
-    <section className="grid gap-3 sm:grid-cols-3" aria-label="요약">
+    <section className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border border-border bg-surface px-3 py-2 text-[13px]" aria-label="요약">
+      <span className="text-xs font-semibold text-muted">종목 {holdings.length}</span>
       {items.map((it) => (
-        <div key={it.label} className="rounded-3xl border border-border bg-surface p-4 shadow-sm">
-          <div className="text-xs text-muted">{it.label}</div>
-          <div className={`num mt-1 text-xl font-bold ${it.cls}`}>{it.value}</div>
-        </div>
+        <span key={it.label} className="num">
+          <span className="mr-1.5 text-xs text-muted">{it.label}</span>
+          <b className={it.cls}>{it.value}</b>
+        </span>
       ))}
-      {!rows.length && holdings.length > 0 && (
-        <p className="text-xs text-muted sm:col-span-3">수량을 입력한 종목이 있으면 금액 합계가 표시돼요.</p>
-      )}
+      {!rows.length && holdings.length > 0 && <span className="text-[11px] text-muted">수량을 입력하면 금액 합계가 표시돼요</span>}
     </section>
   );
 }
