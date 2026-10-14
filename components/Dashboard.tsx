@@ -124,20 +124,6 @@ export function Dashboard() {
     const res = await fetch(`/api/holdings/${h.id}`, { method: "DELETE" });
     if (!res.ok) return toast.error("삭제하지 못했어요");
     await mutate();
-    toast(`${h.name} 삭제됨`, {
-      duration: 6000,
-      action: {
-        label: "되돌리기",
-        onClick: async () => {
-          await fetch("/api/holdings", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ code: h.code, avg_price: h.avg_price, qty: h.qty, target_pct: h.target_pct }),
-          });
-          mutate();
-        },
-      },
-    });
   }
 
   const holdings = useMemo(() => data?.holdings ?? [], [data]);
