@@ -33,6 +33,7 @@
 }
 
 @theme inline {
+  --font-sans: "Toss Product Sans", "Tossface", -apple-system, BlinkMacSystemFont, "Bazier Square", "Noto Sans KR", "Segoe UI", "Apple SD Gothic Neo", Roboto, "Noto Sans KR", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -51,7 +52,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  font-family: "Toss Product Sans", "Tossface", -apple-system, BlinkMacSystemFont, "Bazier Square", "Noto Sans KR", "Segoe UI", "Apple SD Gothic Neo", Roboto, "Noto Sans KR", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   -webkit-font-smoothing: antialiased;
 }
 
