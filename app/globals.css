@@ -76,16 +76,16 @@ body {
 }
 .pulse-ring { animation: pulse-ring 1.6s ease-in-out infinite; }
 
-/* HTS 스타일 한 줄 그리드: 모바일(5열) → 데스크톱(8열) */
+/* HTS 스타일 한 줄 그리드. 열 구성/순서는 --cols-sm / --cols-md (행·헤더에서 인라인으로 지정, lib/columns.ts) */
 .hts-grid {
   display: grid;
   align-items: center;
   column-gap: 8px;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(0, 0.9fr) 50px 70px;
+  grid-template-columns: var(--cols-sm);
 }
 @media (min-width: 768px) {
   .hts-grid {
     column-gap: 12px;
-    grid-template-columns: minmax(0, 1.7fr) 1fr 0.8fr 1fr 0.9fr 1.1fr 0.9fr 112px;
+    grid-template-columns: var(--cols-md);
   }
 }

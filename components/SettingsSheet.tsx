@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Modal } from "./Modal";
+import { ColumnAdmin } from "./ColumnAdmin";
+import type { ColumnPrefs } from "@/lib/columns";
 import { pct, won } from "@/lib/format";
 import type { AlertEvent } from "@/lib/types";
 
@@ -21,20 +23,49 @@ export function SettingsSheet({
   events,
   soundOn,
   onSoundChange,
+  colPrefs,
+  onColPrefs,
+  onColReset,
 }: {
   open: boolean;
   onClose: () => void;
   events: AlertEvent[];
   soundOn: boolean;
   onSoundChange: (on: boolean) => void;
+  colPrefs: ColumnPrefs;
+  onColPrefs: (p: ColumnPrefs) => void;
+  onColReset: () => void;
 }) {
+  const [tab, setTab] = useState<"alert" | "admin">("alert");
   const [s, setS] = useState<Settings | null>(null);
   useEffect(() => {
     if (open) fetch("/api/settings").then((r) => r.json()).then(setS).catch(() => setS(null));
   }, [open]);
 
   return (
-    <Modal open={open} onClose={onClose} title="알림 설정">
+    <Modal open={open} onClose={onClose} title="설정">
+      <div role="tablist" className="mb-4 flex gap-1 rounded-xl bg-surface-2 p-1 text-sm font-semibold">
+        {(
+          [
+            ["alert", "🔔 알림"],
+            ["admin", "🛠 관리자 (구분 순서)"],
+          ] as const
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            role="tab"
+            aria-selected={tab === k}
+            onClick={() => setTab(k)}
+            className={`flex-1 rounded-lg px-3 py-2 ${tab === k ? "bg-surface shadow-sm" : "text-muted"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "admin" ? (
+        <ColumnAdmin prefs={colPrefs} onChange={onColPrefs} onReset={onColReset} />
+      ) : (
       <div className="space-y-6">
         <section>
           <h3 className="mb-2 text-sm font-bold">🔊 브라우저 알림</h3>
@@ -108,6 +139,7 @@ export function SettingsSheet({
 
         <section className="text-xs text-muted">시세 제공: {s?.provider === "kis" ? "한국투자증권 KIS (실시간)" : s?.provider === "naver" ? "네이버 증권 (실시간, 비공식 · 장애 시 Yahoo로 자동 전환)" : s?.provider === "yahoo" ? "Yahoo Finance (지연될 수 있음)" : "–"}</section>
       </div>
+      )}
     </Modal>
   );
 }

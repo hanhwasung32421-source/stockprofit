@@ -7,6 +7,7 @@ import { Plus, Settings } from "lucide-react";
 import { AddHoldingDialog } from "./AddHoldingDialog";
 import { EditHoldingDialog } from "./EditHoldingDialog";
 import { HoldingHeader, HoldingRow, type DropPos, type SortKey, type SortState } from "./HoldingRow";
+import { sortValue, useColumnPrefs, visibleCols } from "@/lib/columns";
 import { SummaryCards } from "./SummaryCards";
 import { AlertBanner } from "./AlertBanner";
 import { SettingsSheet } from "./SettingsSheet";
@@ -41,7 +42,7 @@ const ls = {
 
 export function Dashboard() {
   const { data, error, isLoading, mutate } = useSWR<QuotesResponse>("/api/quotes", fetcher, {
-    refreshInterval: (d) => (d?.marketOpen ? 5_000 : 30_000),
+    refreshInterval: 5_000, // 시세는 항상 5초마다 갱신
     keepPreviousData: true,
     dedupingInterval: 2_000,
   });
@@ -57,11 +58,27 @@ export function Dashboard() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [drop, setDrop] = useState<{ id: string; pos: Exclude<DropPos, null> } | null>(null);
   const [, tick] = useState(0);
+  const { prefs, save: saveCols, reset: resetCols } = useColumnPrefs();
+  const cols = useMemo(() => visibleCols(prefs), [prefs]);
 
   useEffect(() => {
     const t = setInterval(() => tick((n) => n + 1), 1000); // "n초 전" 갱신
     return () => clearInterval(t);
   }, []);
+
+  // 단축키: 메인 화면에서 숫자 1 → 종목추가 (입력 중이거나 창이 열려 있으면 무시)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "1" || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (addOpen || settingsOpen || editing) return;
+      e.preventDefault();
+      setAddOpen(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [addOpen, settingsOpen, editing]);
 
   // 새 알림 이벤트 감지: 첫 로드엔 소리 없이 배너만, 이후 새 이벤트는 소리+팝업
   useEffect(() => {
@@ -136,10 +153,9 @@ export function Dashboard() {
     }
     if (!sort) return base;
     const { key, dir } = sort;
-    const val = (h: ClientHolding) => (key === "name" || key === "bought_at" ? h[key] : h[key]);
     return [...base].sort((a, b) => {
-      const x = val(a);
-      const y = val(b);
+      const x = sortValue(a, key);
+      const y = sortValue(b, key);
       if (x == null && y == null) return 0;
       if (x == null) return 1; // 값 없는 종목은 항상 아래
       if (y == null) return -1;
@@ -187,8 +203,9 @@ export function Dashboard() {
           <button
             onClick={() => setAddOpen(true)}
             className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-bold text-primary-fg hover:opacity-90"
+            title="단축키: 1"
           >
-            <Plus size={16} strokeWidth={3} /> 종목추가
+            <Plus size={16} strokeWidth={3} /> 종목추가 <kbd className="hidden rounded bg-white/20 px-1 text-[10px] sm:inline">1</kbd>
           </button>
           <button onClick={() => setSettingsOpen(true)} aria-label="알림 설정" className="rounded-lg p-2 hover:bg-surface-2">
             <Settings size={18} />
@@ -226,11 +243,12 @@ export function Dashboard() {
         <div className="space-y-2">
           <SummaryCards holdings={holdings} />
           <div className="overflow-hidden rounded-lg border border-border bg-surface">
-            <HoldingHeader sort={sort} onSort={onSort} />
+            <HoldingHeader cols={cols} sort={sort} onSort={onSort} />
             {rows.map((h) => (
               <HoldingRow
                 key={h.id}
                 h={h}
+                cols={cols}
                 dropPos={drop?.id === h.id ? drop.pos : null}
                 onDragStart={(e) => {
                   setDragId(h.id);
@@ -269,7 +287,7 @@ export function Dashboard() {
 
       <AddHoldingDialog open={addOpen} onClose={() => setAddOpen(false)} onAdded={() => mutate()} />
       <EditHoldingDialog holding={editing} onClose={() => setEditing(null)} onSaved={() => mutate()} />
-      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} events={data?.events ?? []} soundOn={soundOn} onSoundChange={changeSound} />
+      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} events={data?.events ?? []} soundOn={soundOn} onSoundChange={changeSound} colPrefs={prefs} onColPrefs={saveCols} onColReset={resetCols} />
     </div>
   );
 }
