@@ -16,7 +16,7 @@ import { AlertBanner } from "./AlertBanner";
 import { SettingsSheet } from "./SettingsSheet";
 import { HistoryDialog } from "./HistoryDialog";
 import { IndexBar } from "./IndexBar";
-import { notifyBrowser, playAlarm, stopAlarm, unlockAudio } from "@/lib/alarm";
+import { isAudioReady, notifyBrowser, playAlarm, stopAlarm, unlockAudio } from "@/lib/alarm";
 import { pct, timeAgo } from "@/lib/format";
 import { useLocalFlag } from "@/lib/use-local-flag";
 import { APP_VERSION } from "@/lib/version";
@@ -54,6 +54,7 @@ export function Dashboard() {
   const inRefreshHours = nowMs === null ? true : isRefreshHours(new Date(nowMs));
   const { data, error, isLoading, mutate } = useSWR<QuotesResponse>("/api/quotes", fetcher, {
     refreshInterval: inRefreshHours ? POLL_MS : 0,
+    refreshWhenHidden: true, // 다른 탭/창을 보고 있어도 알림음이 울리도록 계속 확인
     keepPreviousData: true,
     dedupingInterval: 2_000,
   });
@@ -106,6 +107,20 @@ export function Dashboard() {
     }
   };
 
+  // 브라우저는 사용자가 페이지를 한 번 누르기 전에는 소리를 막는다(새로고침하면 다시 잠김).
+  // 첫 클릭/키 입력에서 오디오를 미리 풀어두어, 알람이 울릴 때 바로 소리가 나게 한다.
+  useEffect(() => {
+    const unlock = () => {
+      if (!isAudioReady()) void unlockAudio();
+    };
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
   // 단축키: 메인 화면에서 숫자 1 → 종목추가 (입력 중이거나 창이 열려 있으면 무시)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -136,7 +151,7 @@ export function Dashboard() {
     for (const e of fresh) {
       notifyBrowser(`🔔 목표 도달 · ${e.name}`, `수익률 ${pct(Number(e.profit_pct))}`);
     }
-    if (soundOn) void playAlarm();
+    if (soundOn) playAlarm(); // 10초 동안 울림 (확인 버튼을 누르면 즉시 중지)
   }, [data, soundOn]);
 
   const ack = useCallback(() => {
@@ -148,9 +163,9 @@ export function Dashboard() {
   async function changeSound(on: boolean) {
     setSoundOn(on);
     if (on) {
-      unlockAudio();
+      await unlockAudio(); // 클릭 직후에 오디오를 풀어야 소리가 난다
+      playAlarm(2); // 테스트음
       if (typeof Notification !== "undefined" && Notification.permission === "default") await Notification.requestPermission();
-      void playAlarm(1); // 테스트음
     } else stopAlarm();
   }
 
@@ -266,6 +281,12 @@ export function Dashboard() {
         <button onClick={() => changeSound(true)} className="mb-2 w-full rounded-lg border border-dashed border-primary bg-down-soft px-3 py-1.5 text-left text-xs font-semibold text-primary">
           🔔 소리·팝업 알림 켜기 <span className="font-normal text-muted">— 목표 도달 시 바로 알려드려요</span>
         </button>
+      )}
+
+      {soundOn && !isAudioReady() && (
+        <div className="mb-2 rounded-lg border border-warn bg-surface-2 px-3 py-1.5 text-xs font-semibold text-warn">
+          🔇 알림음이 켜져 있지만 브라우저가 소리를 막고 있어요 — 화면 아무 곳이나 한 번 클릭하면 소리가 켜집니다.
+        </div>
       )}
 
       <AlertBanner events={pending} onAck={ack} />

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Modal } from "./Modal";
 import { ColumnAdmin } from "./ColumnAdmin";
 import { btnGhost, SectionTitle } from "./ui";
+import { playAlarm, stopAlarm, unlockAudio } from "@/lib/alarm";
 import type { ColumnPrefs } from "@/lib/columns";
 import { pct, tone, won } from "@/lib/format";
 import type { AlertEvent } from "@/lib/types";
@@ -86,12 +87,21 @@ export function SettingsSheet({
       ) : (
         <div className="space-y-3">
           <section className="border border-border">
-            <SectionTitle>브라우저 알림 (탭이 열려 있을 때)</SectionTitle>
+            <SectionTitle>브라우저 알림 (탭이 열려 있을 때 · 알람이 울리면 10초간 소리)</SectionTitle>
             <Row label="소리 + 팝업 알림">
               <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold">
                 <input type="checkbox" checked={soundOn} onChange={(e) => onSoundChange(e.target.checked)} className="h-3.5 w-3.5 accent-[var(--primary)]" />
                 {soundOn ? "사용" : "사용 안 함"}
               </label>
+              <button
+                onClick={async () => {
+                  stopAlarm();
+                  if (!(await unlockAudio()) || !playAlarm(3)) toast.error("브라우저가 소리를 막고 있어요 — 화면을 한 번 클릭한 뒤 다시 눌러 주세요");
+                }}
+                className={`${btnGhost} !h-7 !px-2 text-xs`}
+              >
+                소리 테스트
+              </button>
             </Row>
           </section>
 
