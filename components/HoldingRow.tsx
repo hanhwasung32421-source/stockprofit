@@ -18,7 +18,7 @@ const shortDate = (d: string) => (d ? `${d.slice(2, 4)}.${d.slice(5, 7)}.${d.sli
 /** 모바일에서 숨기는 열(= sm 너비가 없는 열)은 md 이상에서만 보인다 */
 const cellCls = (c: ColKey) => {
   const d = COLUMN_DEFS[c];
-  return `${d.sm ? "" : "hidden md:block"} ${d.align === "right" ? "text-right" : ""}`;
+  return `${d.sm ? "" : "hidden md:block"} text-center`;
 };
 
 export function HoldingHeader({ cols, sort, onSort }: { cols: ColKey[]; sort: SortState; onSort: (k: SortKey) => void }) {
@@ -28,7 +28,7 @@ export function HoldingHeader({ cols, sort, onSort }: { cols: ColKey[]; sort: So
         const d = COLUMN_DEFS[c];
         const active = sort?.key === d.sort;
         return (
-          <div key={c} className={`${cellCls(c)} ${c === "name" ? "pl-4" : ""}`}>
+          <div key={c} className={cellCls(c)}>
             <button
               onClick={() => onSort(d.sort)}
               title="클릭: 오름차순 → 내림차순 → 원래 순서"
@@ -134,10 +134,10 @@ export function HoldingRow({
 
   const cells: Record<ColKey, React.ReactNode> = {
     name: (
-      <div className="flex min-w-0 items-center gap-1">
-        <GripVertical size={14} className="shrink-0 text-muted/50" aria-hidden />
+      <div className="min-w-0">
+        <GripVertical size={14} className="absolute left-1 top-1/2 -translate-y-1/2 text-muted/50" aria-hidden />
         <div className="min-w-0">
-          <div className="flex items-center gap-1 truncate font-bold">
+          <div className="flex items-center justify-center gap-1 truncate font-bold">
             {triggered && (
               <button onClick={onRearm} title="목표 도달 — 눌러서 알림 다시 켜기" aria-label="알림 다시 켜기" className="shrink-0">
                 🔔
@@ -170,7 +170,7 @@ export function HoldingRow({
         <div className="text-[11px] text-muted">
           +{h.target_pct}%
         </div>
-        <div className="ml-auto mt-0.5 h-1.5 w-full max-w-20 overflow-hidden rounded-full bg-surface-2 md:bg-border" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="목표 달성률">
+        <div className="mx-auto mt-0.5 h-1.5 w-full max-w-20 overflow-hidden rounded-full bg-surface-2 md:bg-border" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="목표 달성률">
           <div className={`h-full rounded-full ${progress >= 1 ? "bg-up" : "bg-primary"}`} style={{ width: `${progress * 100}%` }} />
         </div>
       </div>
@@ -192,7 +192,7 @@ export function HoldingRow({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       style={gridVars(cols)}
-      className={`${COLS} cursor-grab border-b border-border px-3 py-2 text-[13px] transition-colors hover:bg-surface-2 active:cursor-grabbing ${
+      className={`${COLS} relative cursor-grab border-b border-border px-3 py-2 text-[13px] transition-colors hover:bg-surface-2 active:cursor-grabbing ${
         triggered ? "bg-up-soft" : ""
       } ${h.enabled ? "" : "opacity-50"} ${dropCls}`}
     >
@@ -202,7 +202,7 @@ export function HoldingRow({
         </div>
       ))}
 
-      <div className="flex justify-end gap-0.5 text-muted">
+      <div className="flex justify-center gap-0.5 text-muted">
         {triggered && (
           <button onClick={onRearm} aria-label="알림 다시 켜기" title="알림 다시 켜기" className="hidden rounded p-1.5 text-up hover:bg-surface md:block">
             <RotateCcw size={15} />

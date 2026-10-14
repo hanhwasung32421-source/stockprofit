@@ -9,22 +9,22 @@ export type SortKey = "name" | "price" | "changePct" | "avg_price" | "profitPct"
 
 type ColDef = {
   label: string;
-  md: string; // 데스크톱 grid 너비
+  md: string; // 데스크톱 grid 너비 (모든 열 동일 폭 → 구분 간격 일정)
   sm?: string; // 모바일 grid 너비 (없으면 모바일에서는 숨김)
   sort: SortKey;
-  align: "left" | "right";
+  align: "center";
   required?: boolean; // 숨길 수 없음
 };
 
 export const COLUMN_DEFS: Record<ColKey, ColDef> = {
-  name: { label: "종목", md: "minmax(0,1.7fr)", sm: "minmax(0,1.4fr)", sort: "name", align: "left", required: true },
-  price: { label: "현재가", md: "1fr", sm: "minmax(0,1.1fr)", sort: "price", align: "right" },
-  changePct: { label: "등락률", md: "0.8fr", sort: "changePct", align: "right" },
-  avg_price: { label: "매수가", md: "1fr", sort: "avg_price", align: "right" },
-  profitPct: { label: "수익률", md: "0.9fr", sm: "minmax(0,0.9fr)", sort: "profitPct", align: "right" },
-  target: { label: "목표", md: "1.1fr", sm: "50px", sort: "target_pct", align: "right" },
-  bought_at: { label: "매수일", md: "0.9fr", sort: "bought_at", align: "right" },
-  elapsed: { label: "매수경과일", md: "0.8fr", sort: "elapsed", align: "right" },
+  name: { label: "종목", md: "minmax(0,1fr)", sm: "minmax(0,1fr)", sort: "name", align: "center", required: true },
+  price: { label: "현재가", md: "minmax(0,1fr)", sm: "minmax(0,1fr)", sort: "price", align: "center" },
+  changePct: { label: "등락률", md: "minmax(0,1fr)", sort: "changePct", align: "center" },
+  avg_price: { label: "매수가", md: "minmax(0,1fr)", sort: "avg_price", align: "center" },
+  profitPct: { label: "수익률", md: "minmax(0,1fr)", sm: "minmax(0,1fr)", sort: "profitPct", align: "center" },
+  target: { label: "목표", md: "minmax(0,1fr)", sm: "minmax(0,1fr)", sort: "target_pct", align: "center" },
+  bought_at: { label: "매수일", md: "minmax(0,1fr)", sort: "bought_at", align: "center" },
+  elapsed: { label: "매수경과일", md: "minmax(0,1fr)", sort: "elapsed", align: "center" },
 };
 
 export const DEFAULT_ORDER: ColKey[] = ["name", "price", "changePct", "avg_price", "profitPct", "target", "bought_at", "elapsed"];
