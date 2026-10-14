@@ -7,6 +7,8 @@ import type { ClientHolding } from "@/lib/types";
 export type ColKey = "name" | "price" | "changePct" | "avg_price" | "profitPct" | "target" | "bought_at" | "elapsed";
 export type SortKey = "name" | "price" | "changePct" | "avg_price" | "profitPct" | "target_pct" | "bought_at" | "elapsed";
 
+export type SortState = { key: SortKey; dir: "asc" | "desc" } | null;
+
 type ColDef = {
   label: string;
   md: string; // 데스크톱 grid 너비 (모든 열 동일 폭 → 구분 간격 일정)

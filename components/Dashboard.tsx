@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { Plus, Settings } from "lucide-react";
 import { AddHoldingDialog } from "./AddHoldingDialog";
 import { EditHoldingDialog } from "./EditHoldingDialog";
-import { HoldingHeader, HoldingRow, type DropPos, type SortKey, type SortState } from "./HoldingRow";
+import { HoldingHeader, HoldingRow, type DropPos, type SortKey } from "./HoldingRow";
 import { sortValue, useColumnPrefs, visibleCols } from "@/lib/columns";
+import { useSortPref } from "@/lib/use-sort-pref";
 import { SummaryCards } from "./SummaryCards";
 import { AlertBanner } from "./AlertBanner";
 import { SettingsSheet } from "./SettingsSheet";
@@ -53,7 +54,7 @@ export function Dashboard() {
   const [soundOn, setSoundOn] = useLocalFlag("sp_sound");
   const [pending, setPending] = useState<AlertEvent[]>([]); // 확인 전 알림 배너
   const known = useRef<Set<string> | null>(null);
-  const [sort, setSort] = useState<SortState>(null);
+  const [sort, setSort] = useSortPref(); // 기본: 매수일 오름차순(맨 아래가 최근), 컴퓨터별 기억
   const [localOrder, setLocalOrder] = useState<string[] | null>(null); // 드래그 직후 즉시 반영용
   const [dragId, setDragId] = useState<string | null>(null);
   const [drop, setDrop] = useState<{ id: string; pos: Exclude<DropPos, null> } | null>(null);
@@ -150,8 +151,7 @@ export function Dashboard() {
     });
   }, [holdings, localOrder, sort]);
 
-  const onSort = (key: SortKey) =>
-    setSort((s) => (s?.key !== key ? { key, dir: "asc" } : s.dir === "asc" ? { key, dir: "desc" } : null));
+  const onSort = (key: SortKey) => setSort(sort?.key !== key ? { key, dir: "asc" } : sort.dir === "asc" ? { key, dir: "desc" } : null);
 
   async function saveOrder(ids: string[]) {
     setLocalOrder(ids);

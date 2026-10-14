@@ -3,13 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, BellOff, ChevronDown, ChevronUp, GripVertical, Minus, Pencil, RotateCcw } from "lucide-react";
 import { pct, tone, won } from "@/lib/format";
-import { COLUMN_DEFS, dLabel, elapsedDays, gridVars, type ColKey, type SortKey } from "@/lib/columns";
+import { COLUMN_DEFS, dLabel, elapsedDays, gridVars, type ColKey, type SortKey, type SortState } from "@/lib/columns";
 import type { ClientHolding } from "@/lib/types";
 
 export const COLS = "hts-grid";
 
-export type { SortKey };
-export type SortState = { key: SortKey; dir: "asc" | "desc" } | null;
+export type { SortKey, SortState };
 export type DropPos = "before" | "after" | null;
 
 /** YYYY-MM-DD → YY.MM.DD */
