@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📈 수익률 알리미
 
-## Getting Started
+보유 종목 + 매수단가 + 목표 수익률을 등록하면, 실시간 시세로 수익률을 계산해 목표 도달 시 브라우저 소리/팝업과 텔레그램으로 알려주는 1인용 웹앱.
+Next.js 16 · Supabase(서울) · Vercel(`icn1` 서울).
 
-First, run the development server:
+## 설정 순서
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. **Supabase** 프로젝트 생성 (Region: *Northeast Asia – Seoul*)
+   - SQL Editor에서 `supabase/migrations/0001_init.sql` 실행
+   - Database → Extensions에서 `pg_cron`, `pg_net` 활성화 (배포 후 `0002_cron.sql` 실행용)
+2. **환경변수** — `.env.example`을 `.env.local`로 복사해 채우기
+   - `KIS_APP_KEY/SECRET` 이 없으면 Yahoo Finance(지연 시세)로 자동 폴백 → 계좌 없이도 먼저 써볼 수 있음
+   - `DATA_GO_KR_KEY`: 공공데이터포털 "금융위원회_KRX상장종목정보" 활용신청 후 발급
+3. **종목 목록 적재(최초 1회)**
+   ```bash
+   curl -X POST -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/sync-stocks
+   ```
+4. `npm run dev` → http://localhost:3000
+5. **Vercel 배포**: 저장소 연결, 환경변수 등록. `vercel.json`의 `regions: ["icn1"]`로 함수가 서울에서 실행됨.
+   배포 후 응답 헤더 `x-vercel-id`에 `icn1`이 있는지 확인.
+6. **탭을 닫아도 알림**: `supabase/migrations/0002_cron.sql`의 `<APP_URL>`, `<CRON_SECRET>`을 바꿔 실행(1분마다 체크).
+7. **텔레그램**: @BotFather로 봇 생성 → `TELEGRAM_BOT_TOKEN` 등록 → 앱의 ⚙ 설정에서 "웹훅 등록" → 봇에게 `/start`.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 구조
+- `lib/quotes/*` — `QuoteProvider` (KIS / Yahoo), DB 캐시(장중 3초)로 호출 제한 보호
+- `lib/alerts/evaluate.ts` — 알람 평가 (조건부 UPDATE로 중복 발송 방지, 목표 −1%p 아래로 내려가면 재무장)
+- `proxy.ts` — 비밀번호 쿠키 인증 (Next 16의 middleware 후속)
+- Supabase는 서버(service role)에서만 접근, 모든 테이블 RLS ON(정책 없음)
