@@ -20,7 +20,7 @@ export function MarketBadge({ market }: { market: string }) {
 /** 종목명/종목코드 자동완성. 선택하면 onSelect로 정확한 6자리 코드를 넘긴다. */
 export function StockCombobox({ onSelect }: { onSelect: (s: StockHit) => void }) {
   const [q, setQ] = useState("");
-  const [result, setResult] = useState<{ term: string; hits: StockHit[] }>({ term: "", hits: [] });
+  const [result, setResult] = useState<{ term: string; hits: StockHit[]; error?: string }>({ term: "", hits: [] });
   const [active, setActive] = useState(0);
   const seq = useRef(0);
 
@@ -31,13 +31,13 @@ export function StockCombobox({ onSelect }: { onSelect: (s: StockHit) => void })
     const t = setTimeout(async () => {
       try {
         const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(term)}`);
-        const json = await res.json();
+        const json = await res.json().catch(() => ({}));
         if (my === seq.current) {
-          setResult({ term, hits: json.results ?? [] });
+          setResult(res.ok ? { term, hits: json.results ?? [] } : { term, hits: [], error: json.error ?? "검색 중 오류가 발생했어요" });
           setActive(0);
         }
       } catch {
-        if (my === seq.current) setResult({ term, hits: [] });
+        if (my === seq.current) setResult({ term, hits: [], error: "서버에 연결하지 못했어요" });
       }
     }, 180);
     return () => clearTimeout(t);
@@ -91,7 +91,10 @@ export function StockCombobox({ onSelect }: { onSelect: (s: StockHit) => void })
             </button>
           </li>
         ))}
-        {term && !loading && hits.length === 0 && (
+        {term && !loading && result.error && (
+          <li className="rounded-xl bg-up-soft px-3 py-4 text-center text-sm text-up">⚠️ {result.error}</li>
+        )}
+        {term && !loading && !result.error && hits.length === 0 && (
           <li className="px-3 py-6 text-center text-sm text-muted">검색 결과가 없어요. 종목명을 다시 확인해 주세요.</li>
         )}
       </ul>

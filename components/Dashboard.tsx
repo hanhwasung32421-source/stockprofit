@@ -18,7 +18,7 @@ import type { AlertEvent, ClientHolding, QuotesResponse } from "@/lib/types";
 
 const fetcher = async (url: string): Promise<QuotesResponse> => {
   const res = await fetch(url);
-  if (!res.ok) throw new Error("fetch failed");
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "시세를 불러오지 못했어요");
   return res.json();
 };
 
@@ -150,7 +150,7 @@ export function Dashboard() {
 
       <AlertBanner events={pending} onAck={ack} />
 
-      {error && !data && <div className="rounded-2xl bg-up-soft p-4 text-sm text-up">시세를 불러오지 못했어요. 잠시 후 다시 시도합니다.</div>}
+      {error && !data && <div className="rounded-2xl bg-up-soft p-4 text-sm text-up">{error instanceof Error ? error.message : "시세를 불러오지 못했어요"} (자동으로 다시 시도합니다)</div>}
       {data?.provider === "yahoo" && (
         <div className="mb-4 rounded-2xl bg-surface-2 px-4 py-2 text-xs text-muted">
           ⚠️ 증권사 API 키가 없어 Yahoo Finance(지연 시세)를 쓰고 있어요. 실시간 알림은 KIS 키를 설정하세요.

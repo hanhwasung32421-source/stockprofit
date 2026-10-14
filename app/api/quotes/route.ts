@@ -4,6 +4,7 @@ import { loadHoldings, profitPct } from "@/lib/holdings";
 import { getQuotes } from "@/lib/quotes";
 import { isMarketOpen } from "@/lib/quotes/market-hours";
 import { evaluateAlerts } from "@/lib/alerts/evaluate";
+import { errorMessage } from "@/lib/errors";
 
 
 export async function GET() {
@@ -40,6 +41,6 @@ export async function GET() {
     });
   } catch (e) {
     console.error("[api/quotes]", e);
-    return NextResponse.json({ error: "시세를 불러오지 못했습니다" }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
   }
 }
