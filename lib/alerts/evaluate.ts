@@ -5,6 +5,7 @@ import { sendTelegram } from "./telegram";
 import { T } from "@/lib/tables";
 
 const REARM_BAND = 1; // %p — 경계에서 왔다갔다할 때 알람 폭탄 방지
+const COOLDOWN_MS = 10_000; // 알람(텔레그램) 발송 후 10초간은 다음 알람을 보내지 않음
 
 const won = (n: number) => n.toLocaleString("ko-KR");
 const sign = (n: number) => (n >= 0 ? "+" : "") + n.toFixed(2);
@@ -16,6 +17,7 @@ const sign = (n: number) => (n >= 0 ? "+" : "") + n.toFixed(2);
  */
 export async function evaluateAlerts(holdings: HoldingRow[], quotes: Map<string, CachedQuote>): Promise<string[]> {
   const fired: string[] = [];
+  let lastSent: number | null = null; // 가장 최근 알람 발송 시각 (조건을 만족하는 종목이 생겼을 때만 조회)
 
   for (const h of holdings) {
     const q = quotes.get(h.code);
@@ -36,6 +38,14 @@ export async function evaluateAlerts(holdings: HoldingRow[], quotes: Map<string,
 
     if (pct < h.target_pct) continue;
 
+    // 쿨다운: 직전 알람 후 10초 이내면 이번엔 보내지 않는다. 종목은 armed 상태로 남아
+    // 다음 평가(탭 5초 폴링 / cron)에서 쿨다운이 끝나면 다시 발송되므로 알람이 유실되지 않는다.
+    if (lastSent === null) {
+      const { data: last } = await db().from(T.alertEvents).select("created_at").order("created_at", { ascending: false }).limit(1).maybeSingle();
+      lastSent = last ? new Date(last.created_at).getTime() : 0;
+    }
+    if (Date.now() - lastSent < COOLDOWN_MS) continue;
+
     const { data: won_ } = await db()
       .from(T.holdings)
       .update({ alert_state: "triggered", triggered_kind: "target", triggered_at: new Date().toISOString() })
@@ -45,6 +55,7 @@ export async function evaluateAlerts(holdings: HoldingRow[], quotes: Map<string,
     if (!won_?.length) continue; // 다른 요청이 먼저 발동시킴
 
     fired.push(h.id);
+    lastSent = Date.now();
     await db().from(T.alertEvents).insert({
       holding_id: h.id,
       code: h.code,

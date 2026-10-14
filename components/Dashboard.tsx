@@ -9,6 +9,7 @@ import { EditHoldingDialog } from "./EditHoldingDialog";
 import { HoldingHeader, HoldingRow, type DropPos, type SortKey } from "./HoldingRow";
 import { sortValue, useColumnPrefs, visibleCols } from "@/lib/columns";
 import { useSortPref } from "@/lib/use-sort-pref";
+import { useAppTitle } from "@/lib/use-app-title";
 import { SummaryCards } from "./SummaryCards";
 import { AlertBanner } from "./AlertBanner";
 import { SettingsSheet } from "./SettingsSheet";
@@ -61,6 +62,9 @@ export function Dashboard() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [drop, setDrop] = useState<{ id: string; pos: Exclude<DropPos, null> } | null>(null);
   const [, tick] = useState(0);
+  const [title, setTitle] = useAppTitle();
+  const [editingTitle, setEditingTitle] = useState(false);
+  const titleClicks = useRef<number[]>([]);
   const { prefs, save: saveCols, reset: resetCols } = useColumnPrefs();
   const cols = useMemo(() => visibleCols(prefs), [prefs]);
 
@@ -68,6 +72,21 @@ export function Dashboard() {
     const t = setInterval(() => tick((n) => n + 1), 1000); // "n초 전" 갱신
     return () => clearInterval(t);
   }, []);
+
+  // 크롬 탭(창) 제목도 같은 이름으로
+  useEffect(() => {
+    document.title = title;
+  }, [title]);
+
+  // 제목을 1초 안에 5번 빠르게 클릭하면 이름 수정 모드
+  const onTitleClick = () => {
+    const now = Date.now();
+    titleClicks.current = [...titleClicks.current.filter((t) => now - t < 1000), now];
+    if (titleClicks.current.length >= 5) {
+      titleClicks.current = [];
+      setEditingTitle(true);
+    }
+  };
 
   // 단축키: 메인 화면에서 숫자 1 → 종목추가 (입력 중이거나 창이 열려 있으면 무시)
   useEffect(() => {
@@ -178,7 +197,29 @@ export function Dashboard() {
     <div className="mx-auto max-w-6xl px-2 pb-10 pt-2 sm:px-4">
       <header className="mb-2 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <h1 className="truncate text-base font-extrabold">📈 수익률 알리미</h1>
+          {editingTitle ? (
+            <input
+              autoFocus
+              defaultValue={title}
+              maxLength={30}
+              onFocus={(e) => e.target.select()}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return; // 한글 조합 중 Enter 무시
+                if (e.key === "Enter") {
+                  setTitle(e.currentTarget.value);
+                  setEditingTitle(false);
+                } else if (e.key === "Escape") setEditingTitle(false);
+              }}
+              onBlur={() => setEditingTitle(false)}
+              aria-label="제목 수정"
+              placeholder="이름 입력 후 Enter"
+              className="h-7 w-48 rounded-sm border border-primary bg-background px-2 text-sm font-bold outline-none"
+            />
+          ) : (
+            <h1 onClick={onTitleClick} className="cursor-default select-none truncate text-base font-extrabold">
+              📈 {title}
+            </h1>
+          )}
           {data && (
             <span className={`flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold ${data.marketOpen ? "bg-up-soft text-up" : "bg-surface-2 text-muted"}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${data.marketOpen ? "animate-pulse bg-up" : "bg-muted"}`} />
