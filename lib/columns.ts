@@ -112,8 +112,8 @@ export const visibleCols = (p: ColumnPrefs): ColKey[] => p.order.filter((k) => !
 
 /** 표시할 열 목록 → 행/헤더가 공유하는 grid 템플릿 (CSS 변수) */
 export function gridVars(cols: ColKey[]): React.CSSProperties {
-  const md = [...cols.map((c) => COLUMN_DEFS[c].md), "112px"].join(" ");
-  const sm = [...cols.filter((c) => COLUMN_DEFS[c].sm).map((c) => COLUMN_DEFS[c].sm), "70px"].join(" ");
+  const md = [...cols.map((c) => COLUMN_DEFS[c].md), "144px"].join(" ");
+  const sm = [...cols.filter((c) => COLUMN_DEFS[c].sm).map((c) => COLUMN_DEFS[c].sm), "92px"].join(" ");
   return { "--cols-md": md, "--cols-sm": sm } as React.CSSProperties;
 }
 

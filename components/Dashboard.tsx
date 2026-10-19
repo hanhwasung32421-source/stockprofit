@@ -175,6 +175,17 @@ export function Dashboard() {
     await mutate();
   }
 
+  // 복사: 같은 종목·매수가·목표로 한 줄 더 추가 (매수일은 추가한 오늘 날짜, 맨 아래에 붙음)
+  async function copyHolding(h: ClientHolding) {
+    const res = await fetch("/api/holdings", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code: h.code, avg_price: h.avg_price, qty: 1, target_pct: h.target_pct }),
+    });
+    if (!res.ok) return toast.error((await res.json().catch(() => ({}))).error ?? "복사하지 못했어요");
+    await mutate();
+  }
+
   async function remove(h: ClientHolding) {
     const res = await fetch(`/api/holdings/${h.id}`, { method: "DELETE" });
     if (!res.ok) return toast.error("삭제하지 못했어요");
@@ -344,6 +355,7 @@ export function Dashboard() {
                 }}
                 onDateChange={(d) => patch(h, { bought_at: d })}
                 onEdit={() => setEditing(h)}
+                onCopy={() => copyHolding(h)}
                 onDelete={() => remove(h)}
                 onToggle={() => patch(h, { enabled: !h.enabled })}
                 onRearm={() => patch(h, { rearm: true })}
