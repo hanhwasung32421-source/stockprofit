@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, BellOff, ChevronDown, ChevronUp, Copy, GripVertical, Minus, Pencil, RotateCcw } from "lucide-react";
+import { Bell, BellOff, Check, ChevronDown, ChevronUp, Copy, GripVertical, Minus, Pencil, RotateCcw } from "lucide-react";
+import { copyText } from "@/lib/clipboard";
 import { pct, tone, won } from "@/lib/format";
 import { COLUMN_DEFS, dLabel, elapsedDays, gridVars, type ColKey, type SortKey, type SortState } from "@/lib/columns";
 import type { ClientHolding } from "@/lib/types";
@@ -96,7 +97,6 @@ export function HoldingRow({
   onDrop,
   onDragEnd,
   onEdit,
-  onCopy,
   onDelete,
   onToggle,
   onRearm,
@@ -110,12 +110,12 @@ export function HoldingRow({
   onDrop: (e: React.DragEvent) => void;
   onDragEnd: () => void;
   onEdit: () => void;
-  onCopy: () => void;
   onDelete: () => void;
   onToggle: () => void;
   onRearm: () => void;
   onDateChange: (d: string) => void;
 }) {
+  const [copied, setCopied] = useState(false); // 종목명 복사 직후 1.2초간 ✓ 표시 (팝업 없이)
   const prev = useRef<number | null>(h.price);
   const [flash, setFlash] = useState("");
   useEffect(() => {
@@ -215,8 +215,18 @@ export function HoldingRow({
         <button onClick={onEdit} aria-label="수정" title="수정" className="rounded p-1 hover:bg-surface md:p-1.5">
           <Pencil size={15} />
         </button>
-        <button onClick={onCopy} aria-label={`${h.name} 복사`} title="복사 — 같은 종목을 한 줄 더 추가" className="rounded p-1 hover:bg-surface md:p-1.5">
-          <Copy size={15} />
+        <button
+          onClick={async () => {
+            if (await copyText(h.name)) {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1200);
+            }
+          }}
+          aria-label={`${h.name} 이름 복사`}
+          title="종목명 복사"
+          className="rounded p-1 hover:bg-surface md:p-1.5"
+        >
+          {copied ? <Check size={15} className="text-up" /> : <Copy size={15} />}
         </button>
         <button onClick={onDelete} aria-label={`${h.name} 삭제`} title="삭제" className="rounded p-1 hover:bg-surface hover:text-up md:p-1.5">
           <Minus size={15} />
