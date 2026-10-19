@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Bell, BellOff, Check, ChevronDown, ChevronUp, Copy, GripVertical, Minus, Pencil, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { copyText } from "@/lib/clipboard";
 import { pct, tone, won } from "@/lib/format";
 import { COLUMN_DEFS, dLabel, elapsedDays, gridVars, type ColKey, type SortKey, type SortState } from "@/lib/columns";
@@ -218,6 +219,7 @@ export function HoldingRow({
         <button
           onClick={async () => {
             if (await copyText(h.name)) {
+              toast.success("종목명이 복사되었습니다", { duration: 1000, closeButton: false }); // 1초 후 자동으로 사라짐
               setCopied(true);
               setTimeout(() => setCopied(false), 1200);
             }
