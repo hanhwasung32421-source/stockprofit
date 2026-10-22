@@ -145,7 +145,16 @@ export function HoldingRow({
                 🔔
               </button>
             )}
-            <span className="truncate">{h.name}</span>
+            <a
+              href={`https://www.tossinvest.com/stocks/A${h.code}/order`}
+              target="_blank"
+              rel="noopener noreferrer"
+              draggable={false}
+              title="토스증권에서 보기"
+              className="truncate hover:text-primary hover:underline"
+            >
+              {h.name}
+            </a>
           </div>
           <div className="num text-[10px] text-muted">
             {h.code}
