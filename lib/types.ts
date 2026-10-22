@@ -12,6 +12,7 @@ export type ClientHolding = {
   triggered_at: string | null;
   bought_at: string;
   sort_order: number | null;
+  note: string | null;
   price: number | null;
   changePct: number | null;
   stale: boolean;
@@ -50,6 +51,7 @@ export type HistoryItem = {
   target_pct: number;
   bought_at: string | null;
   elapsed_days: number | null;
+  note?: string | null;
   deleted_at: string;
 };
 

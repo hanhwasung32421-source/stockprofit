@@ -16,6 +16,7 @@ export type HoldingRow = {
   created_at: string;
   bought_at: string; // YYYY-MM-DD (추가한 날, 수정 가능)
   sort_order: number | null;
+  note: string | null;
 };
 
 /** 0003_order_date.sql 실행 전(컬럼 없음)인지 판별 — 실행 전에도 앱이 죽지 않게 한다 */
@@ -40,6 +41,7 @@ export async function loadHoldings(): Promise<HoldingRow[]> {
       market: stocks?.market ?? "",
       bought_at: h.bought_at ?? kstDate(h.created_at),
       sort_order: h.sort_order ?? null,
+      note: h.note ?? null,
     } as HoldingRow;
   });
 }

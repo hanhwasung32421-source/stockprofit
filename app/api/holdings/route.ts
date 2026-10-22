@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/supabase-server";
 import { getQuotes } from "@/lib/quotes";
 import { isMissingColumn } from "@/lib/holdings";
+import { errorMessage } from "@/lib/errors";
 import { T } from "@/lib/tables";
 
 
@@ -11,6 +12,7 @@ const createSchema = z.object({
   avg_price: z.number().positive(),
   qty: z.number().int().positive().nullable().optional(),
   target_pct: z.number().positive().max(1000),
+  note: z.string().trim().max(100).optional(),
   bought_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // 생략 시 DB 기본값 = 오늘(KST)
 });
 
@@ -29,6 +31,7 @@ export async function POST(req: Request) {
   }
 
   const row = {
+    ...(body.note ? { note: body.note } : {}), // 비고는 입력했을 때만 저장 (0006 SQL 실행 전에도 비고 없이는 추가 가능)
     code: body.code,
     avg_price: body.avg_price,
     qty: body.qty ?? null,
@@ -38,10 +41,13 @@ export async function POST(req: Request) {
   const last = await db().from(T.holdings).select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
   const extra = isMissingColumn(last.error) ? null : { sort_order: (last.data?.sort_order ?? 0) + 1, ...(body.bought_at ? { bought_at: body.bought_at } : {}) };
   let { data, error } = await db().from(T.holdings).insert(extra ? { ...row, ...extra } : row).select().single();
+  if (isMissingColumn(error) && body.note && /note/i.test(error?.message ?? "")) {
+    return NextResponse.json({ error: "비고를 저장하려면 DB 업데이트가 필요해요 — supabase/migrations/0006_note.sql 을 SQL Editor에서 실행하세요" }, { status: 500 });
+  }
   if (isMissingColumn(error)) ({ data, error } = await db().from(T.holdings).insert(row).select().single());
   if (error) {
     console.error("[holdings.create]", error);
-    return NextResponse.json({ error: "저장 실패" }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
   return NextResponse.json({ holding: data }, { status: 201 });
 }

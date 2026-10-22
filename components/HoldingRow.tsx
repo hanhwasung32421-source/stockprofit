@@ -186,6 +186,11 @@ export function HoldingRow({
         </div>
       </div>
     ),
+    note: (
+      <div className="truncate text-[12px]" title={h.note ?? ""}>
+        {h.note}
+      </div>
+    ),
     bought_at: (
       <div className="text-[12px] text-muted">
         <DateCell value={h.bought_at} onChange={onDateChange} />

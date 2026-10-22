@@ -32,6 +32,8 @@ function Cell({ c, it }: { c: ColKey; it: HistoryItem }) {
       return <div className={`num text-sm font-extrabold ${tone(it.profit_pct)}`}>{it.profit_pct != null ? pct(it.profit_pct) : "–"}</div>;
     case "target":
       return <div className="num text-[11px] text-muted">+{it.target_pct}%</div>;
+    case "note":
+      return <div className="truncate text-[12px]" title={it.note ?? ""}>{it.note}</div>;
     case "bought_at":
       return <div className="num text-[12px] text-muted">{shortDate(it.bought_at)}</div>;
     case "elapsed":

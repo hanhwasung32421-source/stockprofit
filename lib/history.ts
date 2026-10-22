@@ -28,6 +28,7 @@ export async function snapshotHolding(id: string): Promise<void> {
       target_pct: Number(h.target_pct),
       bought_at: boughtAt,
       elapsed_days: elapsedDays(boughtAt),
+      ...(h.note ? { note: h.note } : {}),
     });
     if (error) console.error("[history] snapshot failed", error);
   } catch (e) {

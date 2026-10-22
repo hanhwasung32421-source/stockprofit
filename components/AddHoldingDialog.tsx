@@ -21,8 +21,10 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   const [preview, setPreview] = useState<Preview | null>(null);
   const [avg, setAvg] = useState("");
   const [target, setTarget] = useState<number | null>(3);
+  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const targetRef = useRef<HTMLInputElement>(null);
+  const noteRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<Promise<Preview> | null>(null); // 현재가 조회가 끝나기 전에 Enter가 눌려도 기다렸다가 추가
 
   async function choose(s: StockHit) {
@@ -54,7 +56,7 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
       const res = await fetch("/api/holdings", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code: stock.code, avg_price: avgNum, qty: 1, target_pct: target }),
+        body: JSON.stringify({ code: stock.code, avg_price: avgNum, qty: 1, target_pct: target, note: note.trim() || undefined }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "추가하지 못했어요");
@@ -142,7 +144,7 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
-                        void submit();
+                        noteRef.current?.focus(); // 다음 항목(비고)으로
                       }
                     }}
                     aria-label="목표수익률(%)"
@@ -152,10 +154,29 @@ function AddHoldingForm({ onClose, onAdded }: { onClose: () => void; onAdded: ()
               </div>
             </FieldRow>
 
+            <FieldRow label="비고">
+              <input
+                ref={noteRef}
+                lang="ko"
+                className={`${inputCls} !font-sans`}
+                value={note}
+                maxLength={100}
+                onChange={(e) => setNote(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    void submit();
+                  }
+                }}
+                placeholder="예: 1 2 (선택)"
+                aria-label="비고"
+              />
+            </FieldRow>
+
           </div>
 
           <div className="mt-3 flex items-center justify-between">
-            <span className="text-[11px] text-muted">목표수익률 입력 후 Enter ↵ 로 바로 추가</span>
+            <span className="text-[11px] text-muted">Enter ↵ 다음 항목 · 비고에서 Enter ↵ 로 추가</span>
             <div className="flex gap-1">
               <button onClick={onClose} className={btnGhost}>
                 취소

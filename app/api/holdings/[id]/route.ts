@@ -12,6 +12,7 @@ const patchSchema = z
     target_pct: z.number().positive().max(1000),
     enabled: z.boolean(),
     rearm: z.boolean(),
+    note: z.string().trim().max(100).nullable(),
     bought_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   })
   .partial();

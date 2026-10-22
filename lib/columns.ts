@@ -7,8 +7,8 @@ export { elapsedDays, dLabel } from "@/lib/dates";
 // 메인 표의 "구분(열)" 정의와, 컴퓨터(브라우저)별 순서/표시 설정.
 // 설정은 Supabase가 아니라 이 브라우저의 localStorage에 저장된다 → 컴퓨터마다 따로 기억.
 
-export type ColKey = "name" | "price" | "changePct" | "avg_price" | "profitPct" | "target" | "bought_at" | "elapsed";
-export type SortKey = "name" | "price" | "changePct" | "avg_price" | "profitPct" | "target_pct" | "bought_at" | "elapsed";
+export type ColKey = "name" | "price" | "changePct" | "avg_price" | "profitPct" | "target" | "note" | "bought_at" | "elapsed";
+export type SortKey = "name" | "price" | "changePct" | "avg_price" | "profitPct" | "target_pct" | "note" | "bought_at" | "elapsed";
 
 export type SortState = { key: SortKey; dir: "asc" | "desc" } | null;
 
@@ -28,11 +28,14 @@ export const COLUMN_DEFS: Record<ColKey, ColDef> = {
   avg_price: { label: "매수가", md: "minmax(0,1fr)", sort: "avg_price", align: "center" },
   profitPct: { label: "수익률", md: "minmax(0,1fr)", sm: "minmax(0,1fr)", sort: "profitPct", align: "center" },
   target: { label: "목표", md: "minmax(0,1fr)", sm: "minmax(0,1fr)", sort: "target_pct", align: "center" },
+  note: { label: "비고", md: "minmax(0,1fr)", sort: "note", align: "center" },
   bought_at: { label: "매수일", md: "minmax(0,1fr)", sort: "bought_at", align: "center" },
   elapsed: { label: "매수경과일", md: "minmax(0,1fr)", sort: "elapsed", align: "center" },
 };
 
-export const DEFAULT_ORDER: ColKey[] = ["name", "price", "changePct", "avg_price", "profitPct", "target", "bought_at", "elapsed"];
+export const DEFAULT_ORDER: ColKey[] = ["name", "price", "changePct", "avg_price", "profitPct", "target", "note", "bought_at", "elapsed"];
+// 새로 생긴 열을 저장된(사용자가 바꾼) 순서에 끼워 넣을 위치: 지정한 열 바로 앞 (비고는 종목과 매수일 사이)
+const INSERT_BEFORE: Partial<Record<ColKey, ColKey>> = { note: "bought_at" };
 const ALL = new Set<string>(DEFAULT_ORDER);
 
 export type ColumnPrefs = { order: ColKey[]; hidden: ColKey[] };
@@ -45,7 +48,12 @@ function normalize(raw: unknown): ColumnPrefs {
   const o = (raw ?? {}) as { order?: unknown; hidden?: unknown };
   const order = (Array.isArray(o.order) ? o.order : []).filter((k): k is ColKey => typeof k === "string" && ALL.has(k));
   const unique = [...new Set(order)];
-  for (const k of DEFAULT_ORDER) if (!unique.includes(k)) unique.push(k);
+  for (const k of DEFAULT_ORDER) {
+    if (unique.includes(k)) continue;
+    const at = INSERT_BEFORE[k] ? unique.indexOf(INSERT_BEFORE[k]!) : -1;
+    if (at >= 0) unique.splice(at, 0, k);
+    else unique.push(k);
+  }
   const hidden = (Array.isArray(o.hidden) ? o.hidden : []).filter(
     (k): k is ColKey => typeof k === "string" && ALL.has(k) && !COLUMN_DEFS[k as ColKey].required,
   );
@@ -127,6 +135,8 @@ export function sortValue(h: ClientHolding, key: SortKey): string | number | nul
       return elapsedDays(h.bought_at);
     case "target_pct":
       return h.target_pct;
+    case "note":
+      return h.note || null; // 비어 있으면 정렬에서 항상 아래
     default:
       return h[key];
   }

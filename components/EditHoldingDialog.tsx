@@ -23,6 +23,7 @@ export function EditHoldingDialog({
 function EditForm({ holding, onClose, onSaved }: { holding: ClientHolding; onClose: () => void; onSaved: () => void }) {
   const [avg, setAvg] = useState(String(holding.avg_price));
   const [target, setTarget] = useState<number | null>(holding.target_pct);
+  const [note, setNote] = useState(holding.note ?? "");
   const [busy, setBusy] = useState(false);
 
   const avgNum = Number(avg);
@@ -35,7 +36,7 @@ function EditForm({ holding, onClose, onSaved }: { holding: ClientHolding; onClo
       const res = await fetch(`/api/holdings/${holding.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ avg_price: avgNum, qty: 1, target_pct: target }),
+        body: JSON.stringify({ avg_price: avgNum, qty: 1, target_pct: target, note: note.trim() || null }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "저장하지 못했어요");
       toast.success("저장했어요");
@@ -49,7 +50,7 @@ function EditForm({ holding, onClose, onSaved }: { holding: ClientHolding; onClo
   }
 
   const onEnter = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.nativeEvent.isComposing) {
       e.preventDefault();
       void save();
     }
@@ -80,6 +81,9 @@ function EditForm({ holding, onClose, onSaved }: { holding: ClientHolding; onClo
               <span className="text-xs text-muted">%</span>
             </div>
           </div>
+        </FieldRow>
+        <FieldRow label="비고">
+          <input className={`${inputCls} !font-sans`} lang="ko" value={note} maxLength={100} onChange={(e) => setNote(e.target.value)} onKeyDown={onEnter} placeholder="예: 1 2 (선택)" aria-label="비고" />
         </FieldRow>
       </div>
       <div className="mt-3 flex items-center justify-between">

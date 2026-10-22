@@ -6,7 +6,7 @@ import type { SortKey, SortState } from "@/lib/columns";
 // "none"이면 정렬 없이 저장된 수동 순서(드래그)를 쓴다.
 export const DEFAULT_SORT: SortState = { key: "bought_at", dir: "asc" };
 const KEY = "sp_sort";
-const KEYS = new Set<SortKey>(["name", "price", "changePct", "avg_price", "profitPct", "target_pct", "bought_at", "elapsed"]);
+const KEYS = new Set<SortKey>(["name", "price", "changePct", "avg_price", "profitPct", "target_pct", "note", "bought_at", "elapsed"]);
 
 const listeners = new Set<() => void>();
 let cacheRaw: string | null | undefined;
